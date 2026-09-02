@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.env
+
+# Descargas crudas (se pueden volver a bajar). Las muestras chicas SI se versionan.
+/data/raw/**
+!/data/raw/.gitkeep
+
+# SO / editores
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

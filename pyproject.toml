@@ -1,0 +1,13 @@
+[project]
+name = "catastro-litio-noa"
+version = "0.0.1"
+description = "Verificacion de acceso a los catastros mineros de Jujuy, Salta y Catamarca."
+requires-python = ">=3.11"
+dependencies = [
+    "httpx>=0.27",
+    "geopandas>=1.0",
+    "pyogrio>=0.9",
+    "pandas>=2.2",
+    "openpyxl>=3.1",   # leer el .xlsx de Jujuy
+    "cloudscraper>=1.2",  # el geoserver de Catamarca esta detras de Cloudflare
+]
