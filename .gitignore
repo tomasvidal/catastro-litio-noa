@@ -9,6 +9,9 @@ __pycache__/
 /data/raw/**
 !/data/raw/.gitkeep
 
+# Salidas del pipeline (se regeneran). Qué se versiona se define en la tarea 2.15.
+/data/processed/
+
 # SO / editores
 .DS_Store
 Thumbs.db
