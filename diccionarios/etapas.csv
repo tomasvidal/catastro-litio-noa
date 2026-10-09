@@ -1,0 +1,18 @@
+provincia,tramite_original,etapa_administrativa,etapa_proyecto,origen,nota
+jujuy,CATEO,Cateo,Exploración,investigadores,
+jujuy,SOLICITUD DE MINA,Solicitud de mina,Exploración,investigadores,
+jujuy,MINA CONCEDIDA,Mina concedida,Explotación,investigadores,
+jujuy,MINA VACANTE SOLICITADA,Mina vacante solicitada,Explotación,investigadores,
+jujuy,GRUPO MINERO,Grupo minero,Explotación,propuesta,No figura en la planilla; solo está la solicitud de grupo minero
+jujuy,SOLIC. GRUPO MINERO,Solicitud de grupo minero,Canteras y otros,investigadores,
+jujuy,CANTERA,Cantera,Canteras y otros,investigadores,
+jujuy,SERVIDUMBRE,Servidumbre,Canteras y otros,investigadores,
+jujuy,AREA DE RESERVA,Área de reserva,Canteras y otros,investigadores,
+salta,Cateo,Cateo,Exploración,investigadores,
+salta,Manifestacion,Manifestación,Exploración,investigadores,
+salta,Mina,Mina,Explotación,investigadores,
+salta,Grupo Minero,Grupo minero,Explotación,propuesta,No figura en la planilla
+salta,Zona de Investigación Geológica Minera,Zona de investigación geológica minera,Exploración,propuesta,No figura en la planilla
+salta,Cantera,Cantera,Canteras y otros,investigadores,
+salta,Servidumbre,Servidumbre,Canteras y otros,investigadores,
+salta,Convenio,Convenio,Canteras y otros,investigadores,
