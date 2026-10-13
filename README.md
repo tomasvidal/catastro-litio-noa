@@ -33,6 +33,7 @@ provincias fuera del NOA y cualquier dato que no sea público y oficial.
 | [`TAREAS.md`](TAREAS.md) | El avance: checklist de las 4 fases y la próxima tarea. |
 | [`docs/metodologia.md`](docs/metodologia.md) | Cómo se homologa cada variable y qué criterios faltan validar. |
 | [`docs/arquitectura.md`](docs/arquitectura.md) | Cómo funciona el pipeline y cómo se usa GitHub como base de datos para detectar cambios. |
+| [`docs/diagrama_app.html`](docs/diagrama_app.html) | Diagrama interactivo de la app final por fase: qué está hecho y qué falta (abrir en el navegador). |
 | [`docs/diccionario_de_datos.md`](docs/diccionario_de_datos.md) | Las columnas de la base unificada y de qué campo sale cada una en cada provincia. |
 
 ## Estado
@@ -125,6 +126,7 @@ catastro-litio-noa/
     ├── plan_de_trabajo.md        plan de trabajo: objetivos, metodología y cronograma
     ├── metodologia.md            criterios de homologación y pendientes de validación
     ├── arquitectura.md           pipeline, git-scraping y diseño de las fases 3 y 4
+    ├── diagrama_app.html         diagrama interactivo de la app final por fase (hecho / falta)
     ├── diccionario_de_datos.md   columnas de la base unificada y su origen en cada fuente
     └── insumos/                  planillas de criterios del equipo de investigación
         ├── Denominaciones_provinciales_minerales.xlsx
