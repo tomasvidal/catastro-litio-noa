@@ -49,7 +49,8 @@ De cada texto se obtiene:
 3. **Categoría del Código de Minería** (1ra, 2da o ambas) cuando el texto la menciona.
    Va en una columna aparte porque no es un tipo de mineral. En Jujuy muchos cateos solo
    dicen `1 Y 2`.
-4. **Lo que no se reconoció**, que queda en `mineral_sin_clasificar` para revisar.
+4. **Lo que no se reconoció**, que queda en `mineral_sin_clasificar` para revisar. Es
+   lo que sobra del texto después de reconocer minerales, categorías e instalaciones.
 
 Reglas de reconocimiento (`catastro_noa/minerales.py`):
 
@@ -63,6 +64,16 @@ Reglas de reconocimiento (`catastro_noa/minerales.py`):
   cuando el texto no menciona ningún otro mineral.
 - Algunos términos son modificadores (aluvión, aluvional, veta): se reconocen pero no
   suman mineral.
+- Algunos términos son de tipo `no_mineral`: describen instalaciones u obras de las
+  servidumbres de Jujuy (campamento, acopio, cancha, colas, relaves, desmonte, dique,
+  escorial, escombrera, planta de beneficio, playa de secado, gasoducto, instalación,
+  construcción). No suman mineral y, si el texto trae alguno, lo que sobra (nombres de
+  minas, números de expediente) no se marca como sin clasificar. Si el texto trae además
+  minerales reales, se conservan: `DESMONTES Y RELAVES DE PLOMO, ZINC Y PLATA` da
+  *Plomo; Zinc; Plata*. Antes de esta regla, esas instalaciones quedaban como "sin
+  clasificar" aunque claramente no eran minerales.
+- Un error de tipeo frecuente (`SALES ALCALINAS TERREAS`) se trata como *Alcalinotérreos*;
+  sin esa regla sumaba un *Sal* de más.
 
 Un test (`tests/test_diccionarios.py`) verifica que todo término de la planilla del
 equipo esté en el diccionario y en el mismo grupo. Si la planilla se actualiza, el test
@@ -119,6 +130,41 @@ curso, y no solo concesiones otorgadas. En Jujuy, "CONCEDIDA", "REGISTRADA" e
 - `superficie_ha_calculada` es el área geodésica del polígono sobre el elipsoide WGS84.
   Está disponible para todas las provincias, incluso las que no declaran superficie.
 
+## Planilla de revisión
+
+`data/processed/revision_estandarizacion.xlsx` es la planilla que se comparte con el
+equipo (para enviar se le pone la fecha en el nombre, ej. `base_catastro_NOA_2026-10-20.xlsx`).
+Tiene estas hojas:
+
+| Hoja | Contenido |
+|---|---|
+| `LEER` | Qué es cada hoja. |
+| `BASE` | Un registro por derecho minero, sin geometrías. En esta hoja, en `MINERALES` y en `ETAPAS` el encabezado va en azul si la columna es el dato tal como lo publica la provincia, en verde si se construyó al homologar y en gris si es información de control o un conteo (provincia, fecha de descarga, registros, revisar). |
+| `MINERALES` | Cada texto de mineral distinto, cómo se clasificó y cuántos registros lo usan. La columna `revisar` es verdadera cuando algo del texto quedó sin clasificar; son los únicos casos que piden una decisión. Un texto sin minerales y con `revisar` falso es una instalación (`no_mineral`) o una categoría suelta (`1 Y 2`). |
+| `ETAPAS` | Cada combinación provincia / trámite / estado y la etapa y el estado homologado que se le asignó. |
+| `RESUMEN` | Conteos por etapa, estado, categoría y grupo de minerales, una tabla por provincia. |
+
+Los anchos de columna y el nombre de las hojas se fijan en `catastro_noa/salidas.py`, así
+que se mantienen cada vez que se regenera.
+
+## Revisión de los resultados (20/10/2026)
+
+Se revisaron todos los textos de mineral, la tabla de etapas y estados, y la coherencia
+de la base (identificadores, nulos, superficies). Resultado y decisiones:
+
+- **Textos sin clasificar: de 22 a 5.** Las instalaciones pasaron a `no_mineral` (ver
+  arriba). Quedan: tres textos de Salta con cesio y rubidio, y dos de Jujuy que parecen
+  datos mal cargados (`CRETACICO (OBSERVADO)` y `P/CHINCHILLA Y CHINCHILLA I`).
+- **Cesio, rubidio y estroncio siguen sin grupo.** Se evaluó asignarles uno (los metales
+  alcalinos se asocian a las pegmatitas de litio), pero la planilla del equipo no los
+  lista y se dejó la decisión al equipo (ver pendiente 5).
+- **Estado "Otro" en Jujuy:** 30 minas concedidas tienen como estado publicado solo
+  un número de resolución (`Res 41-J-2026 (03/06/2026)`), sin el estado en sí. Quedan
+  como `Otro`.
+- **Superficies de Jujuy:** en 1.188 de 1.478 registros con superficie declarada, esta
+  coincide con la calculada (±5 %). Los demás difieren por la propia fuente; la base
+  conserva las dos columnas.
+
 ## Criterios pendientes de validación
 
 1. **Berilio** figura en dos solapas de la planilla (Metalíferos y Canteras). Se dejó
@@ -134,9 +180,12 @@ curso, y no solo concesiones otorgadas. En Jujuy, "CONCEDIDA", "REGISTRADA" e
 8. **Categorías de estado** homologado.
 9. **Catamarca:** buscar otra fuente oficial con trámite, estado y superficie.
 10. **Servidumbres de Jujuy:** el campo mineral describe instalaciones (campamentos,
-    diques de colas, acopios), así que quedan sin clasificar.
-11. **Superficies de Jujuy:** en algunos registros la superficie declarada difiere mucho
-    de la calculada (hasta ×1000; ¿m² en lugar de ha?).
+    diques de colas, acopios). Se tratan como `no_mineral` (propuesta): no suman mineral
+    ni quedan para revisar. Confirmar que es lo que el equipo quiere.
+11. **Superficies de Jujuy:** en 191 registros la superficie declarada difiere más de
+    20 % de la calculada (hasta ×1000; ¿m² en lugar de ha?).
+12. **Textos de mineral que parecen mal cargados:** `CRETACICO (OBSERVADO)` y
+    `P/CHINCHILLA Y CHINCHILLA I` (Jujuy) no describen un mineral.
 
 ## Problemas conocidos de los datos
 

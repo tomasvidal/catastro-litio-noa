@@ -49,10 +49,10 @@ El checklist detallado y la próxima tarea están en **[`TAREAS.md`](TAREAS.md)*
 
 ## Fuentes
 
-| Provincia | Cómo se obtiene | Registros (9/10/2026) | CRS original |
+| Provincia | Cómo se obtiene | Registros (20/10/2026) | CRS original |
 |---|---|---|---|
 | **Jujuy** | SHP del Juzgado Administrativo de Minas en `mineriajujuy.gob.ar` (link con token que se saca de la landing). Se actualiza a diario. | 1.780 | EPSG:22183 |
-| **Salta** | WFS de `geoportal.salta.gob.ar`, capa `geonode:poligonos_adaf55f39328ff45c8c60e94eb13a7a0` ("Catastro Minero"). | 3.926 | EPSG:4326 |
+| **Salta** | WFS de `geoportal.salta.gob.ar`, capa `geonode:poligonos_adaf55f39328ff45c8c60e94eb13a7a0` ("Catastro Minero"). | 3.924 | EPSG:4326 |
 | **Catamarca** | WFS de `nodoide.catamarca.gob.ar`, capa `idecat:MINAS_<fecha>` (el nombre cambia con cada actualización); si no hay capa, el visor estático de minería. Detrás de Cloudflare (`cloudscraper`). No publica trámite, estado ni superficie. | ⏸ En pausa: el servidor no responde | EPSG:4326 |
 
 ## Cómo correrlo

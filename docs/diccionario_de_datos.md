@@ -27,7 +27,7 @@ Lo genera `uv run python -m catastro_noa` (ver [README](../README.md)).
 | `grupos_minerales` | texto | Grupos del equipo presentes, separados por `; `, en este orden: Metalíferos; Litio y potasio; Depósitos evaporíticos; Tierras raras; Canteras, rocas de aplicación y otros minerales. |
 | `categoria_codigo` | texto | Categoría del Código de Minería si el texto la menciona: `1`, `2` o `1 y 2`. |
 | `tiene_litio` | booleano | `True` si entre los minerales está el litio. |
-| `mineral_sin_clasificar` | texto | Palabras del campo mineral que no se pudieron clasificar. Si no está vacío, conviene revisar el diccionario. |
+| `mineral_sin_clasificar` | texto | Palabras del campo mineral que no se pudieron clasificar. Si no está vacío, conviene revisar el diccionario. No se completa cuando el texto describe una instalación de una servidumbre (campamento, colas, relaves, etc.): esos términos no son minerales y figuran en el diccionario como `no_mineral`. |
 | `departamento` | texto | Departamento, en mayúsculas y sin acentos. |
 | `superficie_ha_fuente` | número | Superficie en hectáreas declarada por la fuente (Jujuy `superficie`, Salta `area`). Catamarca no la publica. |
 | `superficie_ha_calculada` | número | Superficie en hectáreas calculada desde el polígono (área geodésica sobre el elipsoide WGS84). Disponible para todas las provincias. |
