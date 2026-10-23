@@ -10,30 +10,60 @@ from __future__ import annotations
 
 import geopandas as gpd
 import pandas as pd
+from openpyxl.styles import Font, PatternFill
 
 from . import DATA_PROCESSED
 
 _LEEME = [
-    ("Qué es", "Base unificada de los catastros mineros de Jujuy, Salta y Catamarca, "
-               "estandarizada con los criterios acordados con el equipo."),
-    ("BASE", "Un registro por derecho minero, sin geometría. Diccionario de columnas: "
-             "docs/diccionario_de_datos.md en el repositorio."),
+    ("BASE", "Un registro por derecho minero, sin geometrías. En esta hoja y en MINERALES y ETAPAS, el color del "
+             "encabezado indica si la columna es un dato tal como lo publica la provincia, si se construyó al "
+             "homologar o si es información de control o un conteo."),
     ("MINERALES", "Cada texto de mineral distinto, cómo se clasificó y cuántos registros lo usan. "
                   "Arriba los que tienen algo sin clasificar: son los que conviene revisar."),
     ("ETAPAS", "Cada combinación provincia / trámite / estado y a qué etapa y estado homologado se asignó."),
-    ("RESUMEN", "Conteos por provincia, etapa del proyecto y grupo de minerales."),
-    ("Cómo corregir", "Las reglas están en la carpeta diccionarios/ del repositorio (minerales.csv, "
-                      "etapas.csv, estados.csv). La columna 'origen' indica si la regla viene de las "
-                      "planillas del equipo ('investigadores') o es una propuesta a validar ('propuesta')."),
+    ("RESUMEN", "Conteos por etapa del proyecto, estado, categoría y grupo de minerales: "
+                "una tabla por provincia, una al lado de la otra."),
 ]
+
+# Colores de los encabezados de BASE, MINERALES y ETAPAS: qué viene de la fuente y qué se construyó.
+_ORIGINALES = ["id_fuente", "expediente", "nombre", "titular", "tramite_original", "estado_original",
+               "mineral_original", "departamento", "superficie_ha_fuente", "fecha_inicio",
+               "fecha_actualizacion_fuente"]
+_HOMOLOGADAS = ["titular_clave", "etapa_administrativa", "etapa_proyecto", "estado", "minerales",
+                "grupos_minerales", "categoria_codigo", "tiene_litio", "mineral_sin_clasificar",
+                "superficie_ha_calculada"]
+_COLOR_ORIGINAL, _COLOR_HOMOLOGADA, _COLOR_CONTROL = "2F75B5", "548235", "A6A6A6"
+_LEYENDA = [
+    (_COLOR_ORIGINAL, "Azul", "Dato tal como lo publica la provincia (solo se limpiaron espacios y saltos de línea)."),
+    (_COLOR_HOMOLOGADA, "Verde", "Columna construida al homologar: es la que queda en la base y la que conviene verificar "
+                                 "contra su columna azul."),
+    (_COLOR_CONTROL, "Gris", "Información de control o conteo: provincia, fecha de descarga, cantidad de registros y la marca de revisar."),
+]
+
+
+def _pintar_encabezados(ws) -> None:
+    """Colorea el encabezado de cada columna según su origen."""
+    for c in ws[1]:
+        color = (_COLOR_ORIGINAL if c.value in _ORIGINALES
+                 else _COLOR_HOMOLOGADA if c.value in _HOMOLOGADAS else _COLOR_CONTROL)
+        c.fill = PatternFill("solid", fgColor=color)
+        c.font = Font(bold=True, color="FFFFFF")
+
+
+def _escribir_leyenda(ws, fila: int) -> None:
+    ws.cell(row=fila, column=1, value="Colores de los encabezados").font = Font(bold=True)
+    for i, (color, nombre, texto) in enumerate(_LEYENDA, start=1):
+        a = ws.cell(row=fila + i, column=1, value=nombre)
+        a.fill = PatternFill("solid", fgColor=color)
+        a.font = Font(bold=True, color="FFFFFF")
+        ws.cell(row=fila + i, column=2, value=texto)
 
 
 def _tabla_minerales(base: pd.DataFrame) -> pd.DataFrame:
     cols = ["provincia", "mineral_original", "minerales", "grupos_minerales",
             "categoria_codigo", "mineral_sin_clasificar"]
     t = (base[cols].fillna("").groupby(cols).size().rename("registros").reset_index())
-    t["revisar"] = t["mineral_sin_clasificar"].ne("") | (t["minerales"].eq("") & t["categoria_codigo"].eq("")
-                                                          & t["mineral_original"].ne(""))
+    t["revisar"] = t["mineral_sin_clasificar"].ne("")
     return t.sort_values(["revisar", "registros"], ascending=[False, False])
 
 
@@ -61,6 +91,16 @@ def _tabla_resumen(base: pd.DataFrame) -> pd.DataFrame:
     return pd.concat(partes)[["provincia", "dimension", "valor", "registros"]]
 
 
+def _escribir_resumen(xw: pd.ExcelWriter, resumen: pd.DataFrame) -> None:
+    """Una tabla por provincia, una al lado de la otra, en la misma hoja."""
+    col = 0
+    for prov, t in resumen.groupby("provincia", sort=True):
+        t = t.drop(columns="provincia")
+        t.to_excel(xw, sheet_name="RESUMEN", index=False, startrow=1, startcol=col)
+        xw.sheets["RESUMEN"].cell(row=1, column=col + 1, value=prov).font = Font(bold=True)
+        col += len(t.columns) + 1
+
+
 def _autoajustar(ws) -> None:
     ws.freeze_panes = "A2"
     for col in ws.columns:
@@ -83,11 +123,17 @@ def escribir(base: gpd.GeoDataFrame) -> dict[str, str]:
     tabla.to_csv(rutas["csv"], index=False, encoding="utf-8")
 
     with pd.ExcelWriter(rutas["xlsx"], engine="openpyxl") as xw:
-        pd.DataFrame(_LEEME, columns=["hoja", "descripción"]).to_excel(xw, sheet_name="LEEME", index=False)
-        tabla.to_excel(xw, sheet_name="BASE", index=False)
+        pd.DataFrame(_LEEME, columns=["hoja", "descripción"]).to_excel(xw, sheet_name="LEER", index=False)
+        tabla.drop(columns="fuente").to_excel(xw, sheet_name="BASE", index=False)
         _tabla_minerales(tabla).to_excel(xw, sheet_name="MINERALES", index=False)
         _tabla_etapas(tabla).to_excel(xw, sheet_name="ETAPAS", index=False)
-        _tabla_resumen(tabla).to_excel(xw, sheet_name="RESUMEN", index=False)
+        _escribir_resumen(xw, _tabla_resumen(tabla))
         for hoja in xw.sheets.values():
             _autoajustar(hoja)
+        xw.sheets["RESUMEN"].freeze_panes = "A3"
+        for hoja in ("BASE", "MINERALES", "ETAPAS"):
+            _pintar_encabezados(xw.sheets[hoja])
+        _escribir_leyenda(xw.sheets["LEER"], len(_LEEME) + 3)
+        xw.sheets["LEER"].column_dimensions["B"].width = 132  # descripciones en una sola línea
+        xw.sheets["MINERALES"].column_dimensions["H"].width = 12
     return {k: str(v) for k, v in rutas.items()}
