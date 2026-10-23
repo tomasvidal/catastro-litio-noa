@@ -69,8 +69,36 @@ def test_solo_categoria_no_tiene_minerales():
 
 
 def test_lo_desconocido_queda_para_revisar():
-    r = C.clasificar("CAMPAMENTO")
-    assert r.minerales == [] and r.sin_clasificar == "CAMPAMENTO"
+    r = C.clasificar("CRETACICO (OBSERVADO)")
+    assert r.minerales == [] and r.sin_clasificar == "CRETACICO OBSERVADO"
+
+
+@pytest.mark.parametrize("texto", [
+    "CAMPAMENTO",
+    "CAMPAMENTO P/GRUPO MINERO OSIRIS N° 104-I-1990",
+    "COLAS Y RELAVES",
+    "PLANTA DE BENEFICIO",
+    "INSTAL.CAMP, CANCHA MINA Y ACOPIO P/MINA JOSE OCTAVIO N° 805-A-2007",
+])
+def test_instalaciones_no_son_minerales_ni_quedan_para_revisar(texto):
+    r = C.clasificar(texto)
+    assert r.minerales == [] and r.sin_clasificar is None
+
+
+def test_instalacion_con_minerales_conserva_los_minerales():
+    r = C.clasificar("DESMONTES Y RELAVES DE PLOMO, ZINC Y PLATA")
+    assert r.minerales == ["Plomo", "Zinc", "Plata"] and r.sin_clasificar is None
+
+
+def test_cesio_y_rubidio_quedan_sin_grupo_hasta_que_el_equipo_decida():
+    r = C.clasificar("Be,Cs,Ga,Li,Rb")
+    assert r.minerales == ["Berilio", "Galio", "Litio"]
+    assert r.sin_clasificar == "CS RB"
+
+
+def test_sales_alcalinas_terreas_con_error_de_tipeo():
+    r = C.clasificar("BORATO, LITIO Y SALES ALCALINAS TERREAS")
+    assert r.minerales == ["Boratos", "Litio", "Alcalinotérreos"]
 
 
 @pytest.mark.parametrize("vacio", [None, "", "-", "   ", float("nan")])

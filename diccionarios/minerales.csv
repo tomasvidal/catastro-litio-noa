@@ -110,6 +110,7 @@ Alcalinas terreas,nombre,Alcalinotérreos,Depósitos evaporíticos,propuesta,
 Alcalinas terrosas,nombre,Alcalinotérreos,Depósitos evaporíticos,propuesta,
 Alcalinas terrozos,nombre,Alcalinotérreos,Depósitos evaporíticos,propuesta,
 Alc terreas,nombre,Alcalinotérreos,Depósitos evaporíticos,propuesta,Abreviatura
+Sales alcalinas terreas,nombre,Alcalinotérreos,Depósitos evaporíticos,propuesta,Variante con error de tipeo de "sales alcalino térreas"
 Sal,nombre,Sal,Depósitos evaporíticos,investigadores,
 Sal común,nombre,Sal,Depósitos evaporíticos,investigadores,
 Sales,nombre,Sal,Depósitos evaporíticos,investigadores,
@@ -223,3 +224,18 @@ Aluvional,modificador,,,propuesta,Tipo de depósito; no es un mineral
 Veta,modificador,,,propuesta,Tipo de depósito; no es un mineral
 Pirita,modificador,,,propuesta,Aparece como pirita aurífera (el mineral de interés es el oro)
 Pesados,modificador,,,propuesta,Aparece como otros pesados
+Campamento,no_mineral,,,propuesta,Instalación de una servidumbre; no es un mineral
+Acopio,no_mineral,,,propuesta,Instalación de una servidumbre; no es un mineral
+Cancha,no_mineral,,,propuesta,Instalación de una servidumbre; no es un mineral
+Instalacion,no_mineral,,,propuesta,Instalación de una servidumbre; no es un mineral
+Instal,no_mineral,,,propuesta,Abreviatura de instalación
+Construccion,no_mineral,,,propuesta,Obra de una servidumbre; no es un mineral
+Cola,no_mineral,,,propuesta,Colas de proceso (residuo); no es un mineral
+Relave,no_mineral,,,propuesta,Residuo de proceso; no es un mineral
+Desmonte,no_mineral,,,propuesta,Residuo de mina; no es un mineral
+Escorial,no_mineral,,,propuesta,Residuo de fundición; no es un mineral
+Escombrera,no_mineral,,,propuesta,Residuo de mina; no es un mineral
+Dique,no_mineral,,,propuesta,Instalación de una servidumbre; no es un mineral
+Planta de beneficio,no_mineral,,,propuesta,Instalación de una servidumbre; no es un mineral
+Playa de secado,no_mineral,,,propuesta,Instalación de una servidumbre; no es un mineral
+Gasoducto,no_mineral,,,propuesta,Obra de una servidumbre; no es un mineral
