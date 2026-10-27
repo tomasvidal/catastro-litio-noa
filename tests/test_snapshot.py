@@ -16,6 +16,7 @@ def _base(*filas):
         "provincia": [f[0] for f in filas], "id_fuente": [str(i) for i in range(len(filas))],
         "expediente": [f[1] for f in filas], "nombre": [f[2] for f in filas],
         "fuente": "archivo crudo x", "fecha_descarga": dt.date(2026, 11, 2),
+        "fecha_actualizacion_fuente": dt.date(2026, 11, 2),
     })
     return gpd.GeoDataFrame(df, geometry=[f[3] for f in filas], crs="EPSG:4326")
 
@@ -43,7 +44,8 @@ def test_hash_sin_geometria():
 def test_preparar_saca_columnas_volatiles_y_ordena():
     base = _base(("salta", "2", "B", CUADRADO), ("jujuy", "9", "A", CUADRADO), ("salta", "1", "C", CUADRADO))
     tabla, geoms = preparar(base)
-    assert "fuente" not in tabla and "fecha_descarga" not in tabla and "geometry" not in tabla
+    for c in ("fuente", "fecha_descarga", "fecha_actualizacion_fuente", "geometry"):
+        assert c not in tabla
     assert list(tabla["expediente"]) == ["9", "1", "2"]
     assert len(geoms) == 1  # los tres comparten poligono: se guarda una vez
 

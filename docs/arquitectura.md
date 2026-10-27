@@ -112,7 +112,7 @@ pasada** (un deslizador de fecha) y comparar dos fechas.
 | Archivo | ¿Se versiona? | Motivo |
 |---|---|---|
 | `data/raw/` | No | Crudos grandes; se pueden volver a bajar. |
-| `data/snapshot/catastro_noa.csv` | **Sí, cada semana** | Atributos de cada derecho más `geom_hash`. Es texto ordenado y sin columnas que cambian en cada corrida (`fuente`, `fecha_descarga`): git guarda solo las líneas que cambian. Es la fuente del historial. |
+| `data/snapshot/catastro_noa.csv` | **Sí, cada semana** | Atributos de cada derecho más `geom_hash`. Es texto ordenado y sin columnas que cambian en cada corrida (`fuente`, `fecha_descarga`, `fecha_actualizacion_fuente`): git guarda solo las líneas que cambian. Es la fuente del historial. |
 | `data/snapshot/geometrias.parquet` | Sí, solo si cambia alguna forma | Un polígono por `geom_hash`. Es binario (~1 MB), por eso solo se reescribe cuando el conjunto de hashes cambia. |
 | `data/historial/novedades.csv`, `historial.parquet` | Sí (Fase 3) | Chicos; son lo que consume la app. |
 | `data/processed/` | No | Salidas locales: parquet completo y planilla de revisión. Se regeneran con el pipeline. |
