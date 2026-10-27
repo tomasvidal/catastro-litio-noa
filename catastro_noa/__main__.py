@@ -20,12 +20,13 @@ import warnings
 import geopandas as gpd
 import pandas as pd
 
-from . import PROVINCIAS, PROVINCIAS_ACTIVAS
+from . import PROVINCIAS, PROVINCIAS_ACTIVAS, auditoria
+from .claves import asignar_claves
 from .estandarizar import estandarizar
 from .fuentes import obtener
 from .minerales import ClasificadorMinerales
 from .salidas import escribir
-from .snapshot import escribir_snapshot
+from .snapshot import escribir_snapshot, preparar
 from .tramites import ClasificadorTramites
 
 
@@ -71,8 +72,15 @@ def main() -> int:
 
     base = gpd.GeoDataFrame(pd.concat(partes, ignore_index=True), crs="EPSG:4326")
     rutas = escribir(base)
+    novedades = None
     if set(PROVINCIAS_ACTIVAS) <= set(ok):
-        rutas |= escribir_snapshot(base)
+        fecha = base["fecha_descarga"].max()
+        tabla, geoms = preparar(base)
+        historial = auditoria.leer_historial()
+        tabla = asignar_claves(tabla, auditoria.vigentes(historial))
+        novedades, historial = auditoria.aplicar(historial, tabla, fecha)
+        rutas |= escribir_snapshot(tabla, geoms)
+        rutas |= auditoria.escribir(historial, novedades)
     else:
         problemas.append("no se actualizó data/snapshot/: faltan provincias activas o se usó un crudo viejo")
 
@@ -84,6 +92,8 @@ def main() -> int:
           f"{sin_etapa} con trámite sin etapa, {sin_estado} con estado sin homologar")
     for k, v in rutas.items():
         print(f"  {k:8s} -> {v}")
+    if novedades is not None:
+        print(f"Novedades: {len(novedades)}" + (f" ({novedades['evento'].value_counts().to_dict()})" if len(novedades) else ""))
     for p in problemas:
         print(f"ATENCION: {p}")
     return 0

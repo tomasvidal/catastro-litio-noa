@@ -140,7 +140,7 @@ def estandarizar(crudo: Crudo, minerales: ClasificadorMinerales,
     etapas = df["tramite_original"].map(lambda t: tramites.etapa(prov, t))
     df["etapa_administrativa"] = etapas.str[0]
     df["etapa_proyecto"] = etapas.str[1]
-    df["estado"] = df["estado_original"].map(lambda e: tramites.estado(prov, e))
+    df["estado"] = [tramites.estado(prov, e, tr) for e, tr in zip(df["estado_original"], df["tramite_original"])]
 
     res = df["mineral_original"].map(minerales.clasificar)
     df["minerales"] = res.map(lambda r: "; ".join(r.minerales) or None)

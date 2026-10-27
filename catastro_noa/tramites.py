@@ -29,7 +29,10 @@ class ClasificadorTramites:
         self.etapas = {(r.provincia, clave(r.tramite_original)): (r.etapa_administrativa, r.etapa_proyecto)
                        for r in e.itertuples(index=False)}
         s = pd.read_csv(estados, dtype=str, keep_default_na=False)
-        self.estados = [(r.provincia, re.compile(r.patron), r.estado) for r in s.itertuples(index=False)]
+        # `tramite` (opcional): la regla solo vale si el tramite tambien coincide.
+        tramite = s["tramite"] if "tramite" in s else [""] * len(s)
+        self.estados = [(r.provincia, re.compile(r.patron), r.estado, re.compile(tr) if tr else None)
+                        for r, tr in zip(s.itertuples(index=False), tramite)]
 
     def etapa(self, provincia: str, tramite) -> tuple[str | None, str | None]:
         """-> (etapa_administrativa, etapa_proyecto). Si el tramite no esta en el
@@ -39,11 +42,12 @@ class ClasificadorTramites:
             return None, None
         return self.etapas.get((provincia, k), (None, None))
 
-    def estado(self, provincia: str, estado) -> str | None:
+    def estado(self, provincia: str, estado, tramite=None) -> str | None:
         k = clave(estado)
         if k is None:
             return None
-        for prov, patron, valor in self.estados:
-            if prov == provincia and patron.search(k):
+        kt = clave(tramite) or ""
+        for prov, patron, valor, patron_tramite in self.estados:
+            if prov == provincia and patron.search(k) and (patron_tramite is None or patron_tramite.search(kt)):
                 return valor
         return None

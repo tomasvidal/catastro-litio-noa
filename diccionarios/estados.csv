@@ -1,12 +1,13 @@
-provincia,patron,estado,origen,nota
-jujuy,^EN TRAMITE,En trámite,propuesta,
-jujuy,^CONCEDIDA,Vigente,propuesta,Incluye CONCEDIDA - MENSURADA
-jujuy,^REGISTRADA,Vigente,propuesta,Canteras registradas
-jujuy,^INCLUIDA EN G M,Vigente,propuesta,Mina incluida en un grupo minero
-jujuy,^VACANTE,Vacante,propuesta,
-jujuy,^CON RECURSO,Con recurso,propuesta,Recurso ante el Tribunal Contencioso Administrativo
-jujuy,^PASIVO AMBIENTAL,Otro,propuesta,
-jujuy,^RES \d,Otro,propuesta,El estado es el número de una resolución
-salta,^VIGENTE,Vigente,propuesta,En Salta también abarca manifestaciones y cateos en curso
-salta,^VACANTE,Vacante,propuesta,
-salta,^ANULACION,Anulado,propuesta,Anulación de registro sin publicar
+provincia,patron,estado,origen,nota,tramite
+jujuy,^EN TRAMITE,En trámite,propuesta,,
+jujuy,^CONCEDIDA,Vigente,propuesta,Incluye CONCEDIDA - MENSURADA,
+jujuy,^REGISTRADA,Vigente,propuesta,Canteras registradas,
+jujuy,^INCLUIDA EN G M,Vigente,propuesta,Mina incluida en un grupo minero,
+jujuy,^VACANTE,Vacante,propuesta,,
+jujuy,^CON RECURSO,Con recurso,propuesta,Recurso ante el Tribunal Contencioso Administrativo,
+jujuy,^PASIVO AMBIENTAL,Otro,propuesta,,
+jujuy,^RES \d,Vigente,propuesta,La resolución es la que concede la mina,^MINA CONCEDIDA
+jujuy,^RES \d,Otro,propuesta,Resolución con otro trámite: sin determinar,
+salta,^VIGENTE,Vigente,propuesta,En Salta también abarca manifestaciones y cateos en curso,
+salta,^VACANTE,Vacante,propuesta,,
+salta,^ANULACION,Anulado,propuesta,Anulación de registro sin publicar,
