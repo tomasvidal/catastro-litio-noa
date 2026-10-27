@@ -34,12 +34,12 @@ jobs:
 
       - name: Commitear si hubo cambios
         run: |
-          if [ -z "$(git status --porcelain data/snapshot)" ]; then
+          if [ -z "$(git status --porcelain data/snapshot data/historial)" ]; then
             echo "Sin cambios en el catastro."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/snapshot
+          git add data/snapshot data/historial
           git commit -m "datos: snapshot $(date -u +%F)"
           git push
