@@ -23,8 +23,9 @@ import shapely
 from . import DATA_SNAPSHOT
 
 PRECISION = 1e-6
-# Cambian en cada corrida aunque el catastro sea el mismo.
-VOLATILES = ["fuente", "fecha_descarga"]
+# Cambian en cada corrida aunque el catastro sea el mismo. fecha_actualizacion_fuente es la
+# fecha de generacion del archivo de Jujuy: se repite igual en todas las filas.
+VOLATILES = ["fuente", "fecha_descarga", "fecha_actualizacion_fuente"]
 ORDEN = ["provincia", "expediente", "nombre", "geom_hash", "id_fuente"]
 
 
