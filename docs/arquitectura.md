@@ -6,7 +6,7 @@ ya está implementada. Lo que corresponde a las Fases 3 y 4 es el **diseño prev
 ## La idea: *git-scraping*
 
 Git guarda cada versión de cada archivo, con fecha y con el detalle de qué líneas
-cambiaron. Si todos los días se guarda (commitea) el catastro como un CSV ordenado, con
+cambiaron. Si cada semana se guarda (commitea) el catastro como un CSV ordenado, con
 una línea por derecho minero, **el historial de git se convierte en una serie de tiempo
 del catastro**:
 
@@ -23,7 +23,7 @@ No hace falta una base de datos: GitHub almacena, versiona y respalda gratis, y 
 ## Flujo completo
 
 ```
-          todos los días (GitHub Actions, cron)
+          cada semana (GitHub Actions, cron)
                         │
    ┌────────────────────▼─────────────────────┐
    │ 1. INGESTA          catastro_noa/fuentes  │  Jujuy SHP, Salta WFS (Catamarca en pausa)
@@ -33,7 +33,8 @@ No hace falta una base de datos: GitHub almacena, versiona y respalda gratis, y 
                         │ git commit + push (solo si algo cambió)
    ┌────────────────────▼─────────────────────┐
    │ Repositorio GitHub = "base de datos"      │
-   │  data/processed/catastro_noa.csv   foto de HOY (su historial git = todas las fotos)
+   │  data/snapshot/catastro_noa.csv    foto de HOY (su historial git = todas las fotos)
+   │  data/snapshot/geometrias.parquet  polígonos, uno por geom_hash
    │  data/historial/novedades.csv      registro de eventos (crece, nunca se borra)
    │  data/historial/historial.parquet  cada versión de cada derecho, con vigencia
    └────────────────────┬─────────────────────┘
@@ -111,13 +112,20 @@ pasada** (un deslizador de fecha) y comparar dos fechas.
 | Archivo | ¿Se versiona? | Motivo |
 |---|---|---|
 | `data/raw/` | No | Crudos grandes; se pueden volver a bajar. |
-| `catastro_noa.csv` | **Sí, todos los días** | Es texto ordenado: git guarda solo las líneas que cambian (unos KB por día). Es la fuente del historial. |
-| `novedades.csv`, `historial.parquet` | Sí | Chicos; son lo que consume la app. |
-| `catastro_noa.parquet` | A definir | Es binario: git guarda una copia entera (~1 MB) en cada cambio. Conviene regenerarlo en cada corrida, o versionarlo solo si la app lo necesita del repo. |
-| `revision_estandarizacion.xlsx` | A definir | Solo sirve para revisiones puntuales con el equipo. |
+| `data/snapshot/catastro_noa.csv` | **Sí, cada semana** | Atributos de cada derecho más `geom_hash`. Es texto ordenado y sin columnas que cambian en cada corrida (`fuente`, `fecha_descarga`): git guarda solo las líneas que cambian. Es la fuente del historial. |
+| `data/snapshot/geometrias.parquet` | Sí, solo si cambia alguna forma | Un polígono por `geom_hash`. Es binario (~1 MB), por eso solo se reescribe cuando el conjunto de hashes cambia. |
+| `data/historial/novedades.csv`, `historial.parquet` | Sí (Fase 3) | Chicos; son lo que consume la app. |
+| `data/processed/` | No | Salidas locales: parquet completo y planilla de revisión. Se regeneran con el pipeline. |
 
-Para que el CSV registre también los **cambios de polígono**, conviene incluir la
-geometría como texto (WKT) en una columna (decisión de la tarea 2.15).
+**Por qué la geometría va aparte.** Poner el polígono como texto (WKT) en el CSV haría que
+cualquier diferencia de decimales o de orden de vértices ensucie el diff. En cambio, el
+`geom_hash` se calcula sobre el polígono normalizado (coordenadas a 6 decimales, unos
+0,1 m, y vértices en orden canónico): cambia solo si cambia la forma.
+
+**Frecuencia.** La descarga es semanal (lunes, 06:00 en Argentina) porque los estados y
+titulares no cambian con más frecuencia. Se puede lanzar a mano desde la pestaña Actions.
+Si una provincia no responde, la corrida falla y no se commitea nada: una foto incompleta
+se leería como la baja de todos sus derechos.
 
 Límites de GitHub: 100 MB por archivo y se recomienda un repo de menos de 1 GB. Con este
 esquema se está muy lejos de ambos durante años. GitHub Actions es gratis para repos

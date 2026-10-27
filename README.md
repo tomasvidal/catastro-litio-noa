@@ -64,10 +64,23 @@ uv sync                                   # instala dependencias
 uv run python -m catastro_noa             # descarga las provincias activas (Jujuy y Salta) y genera la base
 uv run python -m catastro_noa --offline   # reprocesa con los últimos crudos descargados
 uv run python -m catastro_noa --provincias jujuy salta catamarca   # incluye Catamarca
+uv run python -m catastro_noa --estricto  # falla si alguna provincia no se pudo descargar
 uv run pytest                             # tests
 ```
 
-Salidas en `data/processed/`:
+Una vez por semana, un workflow de GitHub Actions (`.github/workflows/actualizar.yml`)
+corre el pipeline con `--estricto` y commitea la foto en `data/snapshot/` si hubo cambios.
+También se puede lanzar a mano desde la pestaña Actions.
+
+Foto versionada en `data/snapshot/` (es lo que commitea el workflow):
+
+- `catastro_noa.csv`: un registro por derecho, sin geometría y con la columna `geom_hash`.
+  Está ordenado y no tiene columnas que cambian en cada corrida, así que un diff de git
+  muestra solo cambios reales.
+- `geometrias.parquet`: un polígono por `geom_hash`. Solo se reescribe si cambia alguna
+  forma.
+
+Salidas locales en `data/processed/` (ignoradas por git):
 
 - `catastro_noa.parquet`: base unificada con geometría (GeoParquet, EPSG:4326).
 - `catastro_noa.csv`: la misma base, sin geometría.
@@ -104,7 +117,8 @@ catastro-litio-noa/
 │   ├── tramites.py           etapa administrativa, etapa del proyecto y estado legal
 │   ├── titulares.py          clave comparable del titular
 │   ├── texto.py              limpieza de texto y números
-│   └── salidas.py            escritura de parquet, csv y planilla de revisión
+│   ├── salidas.py            escritura de parquet, csv y planilla de revisión
+│   └── snapshot.py           foto versionada: csv de atributos + geometrías por hash
 │
 ├── diccionarios/             reglas de homologación, editables y versionadas
 │   ├── minerales.csv         término -> mineral canónico -> grupo (origen: investigadores/propuesta)
@@ -120,7 +134,10 @@ catastro-litio-noa/
 ├── data/
 │   ├── raw/                  descargas crudas por provincia y fecha (ignorado por git)
 │   ├── samples/              muestras chicas de la Fase 1 (versionadas)
-│   └── processed/            base unificada que genera el pipeline
+│   ├── processed/            salidas locales del pipeline (ignorado por git)
+│   └── snapshot/             foto versionada del catastro, la actualiza el workflow
+│
+├── .github/workflows/        actualizar.yml: descarga semanal y commit de la foto
 │
 └── docs/
     ├── plan_de_trabajo.md        plan de trabajo: objetivos, metodología y cronograma

@@ -19,9 +19,9 @@ Documentación relacionada: [README](README.md) (alcance, estructura y cómo cor
 - **Fase actual:** 2. Ingesta, homologación y pipeline CI/CD.
 - **Provincias activas:** Jujuy y Salta. Catamarca está en pausa (su servidor no
   responde).
-- **Última actualización:** 20/10/2026.
-- **Próxima tarea:** 2.12. Enviar la base al equipo para que la revise. Mientras se
-  espera la devolución, se puede avanzar con 2.15 y 2.16.
+- **Última actualización:** 27/10/2026.
+- **Próxima tarea:** terminar 2.16 (probar el workflow en GitHub) y seguir con la Fase 3,
+  empezando por 3.1. La devolución del equipo (2.13 y 2.14) se incorpora cuando llegue.
 
 ---
 
@@ -58,7 +58,7 @@ Hecho:
 - [x] 2.8 Geometrías en EPSG:4326, reparación de inválidas y superficie calculada.
 - [x] 2.9 Salidas: `data/processed/catastro_noa.parquet`, `.csv` y
       `revision_estandarizacion.xlsx`. `catastro_noa/salidas.py`.
-- [x] 2.10 Tests (`uv run pytest`, 75 casos).
+- [x] 2.10 Tests (`uv run pytest`, 83 casos).
 - [x] 2.19 Metodología documentada en `docs/metodologia.md` y arquitectura en
       `docs/arquitectura.md`.
 - [x] 2.20 Revisión de la clasificación de minerales (20/10/2026): nuevo tipo
@@ -86,11 +86,14 @@ Pendiente:
 - [ ] 2.14 👥 Cerrar con el equipo la lista definitiva de etapas (la planilla
       `Denominaciones_provinciales_tramites.xlsx` está en pausa) y ajustar
       `diccionarios/etapas.csv`.
-- [ ] 2.15 Definir qué se versiona de `data/processed/` (ver `docs/arquitectura.md`,
-      sección "Qué se versiona"): CSV diario con la geometría como WKT, ¿parquet?,
-      ¿Excel? Ajustar `.gitignore` y `salidas.py`.
-- [ ] 2.16 GitHub Actions: workflow con cron diario que corra `uv sync`, `uv run pytest`
-      y `uv run python -m catastro_noa`, y commitee si hubo cambios.
+- [x] 2.15 Qué se versiona: `data/snapshot/catastro_noa.csv` (atributos + `geom_hash`, sin
+      columnas que cambian en cada corrida) y `data/snapshot/geometrias.parquet` (un polígono
+      por hash, solo se reescribe si cambia alguna forma). `data/processed/` sigue ignorado.
+      `catastro_noa/snapshot.py`, `docs/arquitectura.md`.
+- [~] 2.16 GitHub Actions: `.github/workflows/actualizar.yml`, semanal (lunes 06:00 AR) y a
+      mano. Corre `uv sync`, `uv run pytest` y `uv run python -m catastro_noa --estricto`, y
+      commitea `data/snapshot/` si hubo cambios. Falta probarlo en GitHub: lanzarlo a mano y
+      confirmar que Jujuy y Salta responden desde los servidores de Actions.
 - [ ] 2.17 ⏸ Catamarca: averiguar si el visor tiene otras capas (`MINAS_1..4`) separadas
       por tipo de trámite, para completar `etapa_administrativa`.
 - [ ] 2.18 Revisar las superficies declaradas de Jujuy que no coinciden con las
