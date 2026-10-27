@@ -22,6 +22,9 @@ Reglas:
     separada por comas, para no confundir la 'Y' de 'ORO Y PLATA' con el itrio.
   - 'Diseminado' es un tipo de deposito: solo se cuenta como mineral (grupo
     Metalíferos) cuando no aparece ningun otro mineral en el texto.
+  - Los terminos de tipo 'no_mineral' (campamento, colas, relaves...) son instalaciones
+    de las servidumbres: no suman minerales y, si aparecen, lo que sobra del texto
+    (nombres de minas, expedientes) no se marca como sin clasificar.
 """
 
 from __future__ import annotations
@@ -86,17 +89,18 @@ class ClasificadorMinerales:
         d = pd.read_csv(ruta, dtype=str, keep_default_na=False)
         self.grupo_de: dict[str, str] = {}
         self.simbolos: dict[str, str] = {}
-        nombres: list[tuple[int, re.Pattern, str | None]] = []
+        nombres: list[tuple[int, re.Pattern, str | None, bool]] = []
         for r in d.itertuples(index=False):
             if r.tipo == "simbolo":
                 self.simbolos[r.termino.strip()] = r.mineral
             else:
-                mineral = r.mineral or None  # los modificadores no tienen mineral
-                nombres.append((len(alinear(r.termino).strip()), _patron_nombre(r.termino), mineral))
+                mineral = r.mineral or None  # los modificadores y no_mineral no tienen mineral
+                nombres.append((len(alinear(r.termino).strip()), _patron_nombre(r.termino),
+                                mineral, r.tipo == "no_mineral"))
             if r.mineral:
                 self.grupo_de[r.mineral] = r.grupo
         # Primero los terminos mas largos.
-        self.nombres = [(p, m) for _, p, m in sorted(nombres, key=lambda x: -x[0])]
+        self.nombres = [(p, m, nm) for _, p, m, nm in sorted(nombres, key=lambda x: -x[0])]
 
     def clasificar(self, valor) -> Resultado:
         s = limpiar(valor)
@@ -135,10 +139,12 @@ class ClasificadorMinerales:
                 tapar(m.start(), m.end())
 
         # 3) Nombres, de mas largo a mas corto.
-        for patron, mineral in self.nombres:
+        es_no_mineral = False
+        for patron, mineral, no_mineral in self.nombres:
             for m in patron.finditer("".join(tapado)):
                 if mineral:
                     encontrados.append((m.start(), mineral))
+                es_no_mineral |= no_mineral
                 tapar(m.start(), m.end())
 
         minerales: list[str] = []
@@ -154,5 +160,6 @@ class ClasificadorMinerales:
             minerales=minerales,
             grupos=[g for g in GRUPOS if g in grupos_presentes],
             categoria=_texto_categoria(cats),
-            sin_clasificar=" ".join(resto) or None,
+            # Si el texto describe una instalacion, el resto son nombres de minas y expedientes.
+            sin_clasificar=None if es_no_mineral else (" ".join(resto) or None),
         )

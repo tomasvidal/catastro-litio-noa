@@ -1,0 +1,45 @@
+name: Actualizar catastro
+
+# Los lunes a las 09:00 UTC (06:00 en Argentina). También se puede correr a mano
+# desde la pestaña Actions ("Run workflow").
+on:
+  schedule:
+    - cron: "0 9 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# Si se pisan dos corridas, la segunda espera a la primera.
+concurrency:
+  group: actualizar-catastro
+  cancel-in-progress: false
+
+jobs:
+  actualizar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: astral-sh/setup-uv@v10
+
+      - run: uv sync --locked
+
+      - run: uv run pytest -q
+
+      # --estricto: si una provincia no responde, la corrida falla y no se commitea nada
+      # (una foto incompleta parecería que se dieron de baja todos sus derechos).
+      - run: uv run python -m catastro_noa --estricto
+
+      - name: Commitear si hubo cambios
+        run: |
+          if [ -z "$(git status --porcelain data/snapshot)" ]; then
+            echo "Sin cambios en el catastro."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/snapshot
+          git commit -m "datos: snapshot $(date -u +%F)"
+          git push

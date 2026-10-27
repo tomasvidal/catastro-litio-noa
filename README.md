@@ -33,6 +33,7 @@ provincias fuera del NOA y cualquier dato que no sea público y oficial.
 | [`TAREAS.md`](TAREAS.md) | El avance: checklist de las 4 fases y la próxima tarea. |
 | [`docs/metodologia.md`](docs/metodologia.md) | Cómo se homologa cada variable y qué criterios faltan validar. |
 | [`docs/arquitectura.md`](docs/arquitectura.md) | Cómo funciona el pipeline y cómo se usa GitHub como base de datos para detectar cambios. |
+| [`docs/diagrama_app.html`](docs/diagrama_app.html) | Diagrama interactivo de la app final por fase: qué está hecho y qué falta (abrir en el navegador). |
 | [`docs/diccionario_de_datos.md`](docs/diccionario_de_datos.md) | Las columnas de la base unificada y de qué campo sale cada una en cada provincia. |
 
 ## Estado
@@ -48,10 +49,10 @@ El checklist detallado y la próxima tarea están en **[`TAREAS.md`](TAREAS.md)*
 
 ## Fuentes
 
-| Provincia | Cómo se obtiene | Registros (9/10/2026) | CRS original |
+| Provincia | Cómo se obtiene | Registros (20/10/2026) | CRS original |
 |---|---|---|---|
 | **Jujuy** | SHP del Juzgado Administrativo de Minas en `mineriajujuy.gob.ar` (link con token que se saca de la landing). Se actualiza a diario. | 1.780 | EPSG:22183 |
-| **Salta** | WFS de `geoportal.salta.gob.ar`, capa `geonode:poligonos_adaf55f39328ff45c8c60e94eb13a7a0` ("Catastro Minero"). | 3.926 | EPSG:4326 |
+| **Salta** | WFS de `geoportal.salta.gob.ar`, capa `geonode:poligonos_adaf55f39328ff45c8c60e94eb13a7a0` ("Catastro Minero"). | 3.924 | EPSG:4326 |
 | **Catamarca** | WFS de `nodoide.catamarca.gob.ar`, capa `idecat:MINAS_<fecha>` (el nombre cambia con cada actualización); si no hay capa, el visor estático de minería. Detrás de Cloudflare (`cloudscraper`). No publica trámite, estado ni superficie. | ⏸ En pausa: el servidor no responde | EPSG:4326 |
 
 ## Cómo correrlo
@@ -63,10 +64,23 @@ uv sync                                   # instala dependencias
 uv run python -m catastro_noa             # descarga las provincias activas (Jujuy y Salta) y genera la base
 uv run python -m catastro_noa --offline   # reprocesa con los últimos crudos descargados
 uv run python -m catastro_noa --provincias jujuy salta catamarca   # incluye Catamarca
+uv run python -m catastro_noa --estricto  # falla si alguna provincia no se pudo descargar
 uv run pytest                             # tests
 ```
 
-Salidas en `data/processed/`:
+Una vez por semana, un workflow de GitHub Actions (`.github/workflows/actualizar.yml`)
+corre el pipeline con `--estricto` y commitea la foto en `data/snapshot/` si hubo cambios.
+También se puede lanzar a mano desde la pestaña Actions.
+
+Foto versionada en `data/snapshot/` (es lo que commitea el workflow):
+
+- `catastro_noa.csv`: un registro por derecho, sin geometría y con la columna `geom_hash`.
+  Está ordenado y no tiene columnas que cambian en cada corrida, así que un diff de git
+  muestra solo cambios reales.
+- `geometrias.parquet`: un polígono por `geom_hash`. Solo se reescribe si cambia alguna
+  forma.
+
+Salidas locales en `data/processed/` (ignoradas por git):
 
 - `catastro_noa.parquet`: base unificada con geometría (GeoParquet, EPSG:4326).
 - `catastro_noa.csv`: la misma base, sin geometría.
@@ -103,7 +117,8 @@ catastro-litio-noa/
 │   ├── tramites.py           etapa administrativa, etapa del proyecto y estado legal
 │   ├── titulares.py          clave comparable del titular
 │   ├── texto.py              limpieza de texto y números
-│   └── salidas.py            escritura de parquet, csv y planilla de revisión
+│   ├── salidas.py            escritura de parquet, csv y planilla de revisión
+│   └── snapshot.py           foto versionada: csv de atributos + geometrías por hash
 │
 ├── diccionarios/             reglas de homologación, editables y versionadas
 │   ├── minerales.csv         término -> mineral canónico -> grupo (origen: investigadores/propuesta)
@@ -119,12 +134,16 @@ catastro-litio-noa/
 ├── data/
 │   ├── raw/                  descargas crudas por provincia y fecha (ignorado por git)
 │   ├── samples/              muestras chicas de la Fase 1 (versionadas)
-│   └── processed/            base unificada que genera el pipeline
+│   ├── processed/            salidas locales del pipeline (ignorado por git)
+│   └── snapshot/             foto versionada del catastro, la actualiza el workflow
+│
+├── .github/workflows/        actualizar.yml: descarga semanal y commit de la foto
 │
 └── docs/
     ├── plan_de_trabajo.md        plan de trabajo: objetivos, metodología y cronograma
     ├── metodologia.md            criterios de homologación y pendientes de validación
     ├── arquitectura.md           pipeline, git-scraping y diseño de las fases 3 y 4
+    ├── diagrama_app.html         diagrama interactivo de la app final por fase (hecho / falta)
     ├── diccionario_de_datos.md   columnas de la base unificada y su origen en cada fuente
     └── insumos/                  planillas de criterios del equipo de investigación
         ├── Denominaciones_provinciales_minerales.xlsx

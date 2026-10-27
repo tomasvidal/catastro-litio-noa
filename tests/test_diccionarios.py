@@ -55,8 +55,8 @@ def test_planilla_cubierta():
 
 
 def test_diccionario_bien_formado():
-    assert set(D["tipo"]) <= {"nombre", "simbolo", "modificador"}
-    assert set(D.loc[D["tipo"] != "modificador", "grupo"]) <= set(GRUPOS)
+    assert set(D["tipo"]) <= {"nombre", "simbolo", "modificador", "no_mineral"}
+    assert set(D.loc[~D["tipo"].isin(["modificador", "no_mineral"]), "grupo"]) <= set(GRUPOS)
     assert set(D["origen"]) <= {"investigadores", "propuesta"}
     assert not D.duplicated(["termino", "tipo"]).any()
     # un mismo mineral canonico no puede quedar en dos grupos

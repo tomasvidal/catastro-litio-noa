@@ -5,6 +5,7 @@ from pathlib import Path
 RAIZ = Path(__file__).resolve().parents[1]
 DATA_RAW = RAIZ / "data" / "raw"
 DATA_PROCESSED = RAIZ / "data" / "processed"
+DATA_SNAPSHOT = RAIZ / "data" / "snapshot"
 DICCIONARIOS = RAIZ / "diccionarios"
 
 PROVINCIAS = ("jujuy", "salta", "catamarca")
