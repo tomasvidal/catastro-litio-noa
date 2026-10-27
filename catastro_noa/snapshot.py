@@ -1,7 +1,7 @@
 """
 Foto versionada del catastro, en data/snapshot/ (es lo que commitea el robot):
 
-  catastro_noa.csv     atributos de cada derecho + geom_hash. Sin geometria, ordenado y sin
+  catastro_noa.csv     clave + atributos de cada derecho + geom_hash. Sin geometria, ordenado y sin
                        columnas que cambian en cada corrida: un diff de git muestra solo
                        cambios reales.
   geometrias.parquet   un poligono por geom_hash (GeoParquet, EPSG:4326). Solo se reescribe si
@@ -24,9 +24,10 @@ from . import DATA_SNAPSHOT
 
 PRECISION = 1e-6
 # Cambian en cada corrida aunque el catastro sea el mismo. fecha_actualizacion_fuente es la
-# fecha de generacion del archivo de Jujuy: se repite igual en todas las filas.
-VOLATILES = ["fuente", "fecha_descarga", "fecha_actualizacion_fuente"]
-ORDEN = ["provincia", "expediente", "nombre", "geom_hash", "id_fuente"]
+# fecha de generacion del archivo de Jujuy: se repite igual en todas las filas. id_fuente es el
+# id interno de la fuente y Salta lo regenera entero (se vio al comparar dos descargas).
+VOLATILES = ["fuente", "fecha_descarga", "fecha_actualizacion_fuente", "id_fuente"]
+ORDEN = ["provincia", "expediente", "nombre", "geom_hash", "titular_clave", "tramite_original"]
 
 
 def normalizar(geom):
@@ -48,7 +49,8 @@ def preparar(base: gpd.GeoDataFrame) -> tuple[pd.DataFrame, gpd.GeoDataFrame]:
 
     tabla = pd.DataFrame(base.drop(columns=["geometry", *VOLATILES]))
     tabla["geom_hash"] = hashes.values
-    tabla = tabla.sort_values(ORDEN, na_position="last").reset_index(drop=True)
+    orden = [c for c in ORDEN if c in tabla]
+    tabla = tabla.sort_values(orden, na_position="last", kind="stable").reset_index(drop=True)
 
     geoms = (gpd.GeoDataFrame({"geom_hash": hashes.values}, geometry=normalizadas.values, crs=base.crs)
              .dropna(subset=["geom_hash"]).drop_duplicates("geom_hash")
@@ -56,12 +58,13 @@ def preparar(base: gpd.GeoDataFrame) -> tuple[pd.DataFrame, gpd.GeoDataFrame]:
     return tabla, geoms
 
 
-def escribir_snapshot(base: gpd.GeoDataFrame) -> dict[str, str]:
+def escribir_snapshot(tabla: pd.DataFrame, geoms: gpd.GeoDataFrame) -> dict[str, str]:
+    """Escribe la foto. `tabla` y `geoms` son lo que devuelve `preparar`; la clave
+    (catastro_noa.claves) ya tiene que estar asignada."""
     DATA_SNAPSHOT.mkdir(parents=True, exist_ok=True)
     ruta_csv = DATA_SNAPSHOT / "catastro_noa.csv"
     ruta_geo = DATA_SNAPSHOT / "geometrias.parquet"
 
-    tabla, geoms = preparar(base)
     # lineterminator fijo: el default depende del SO y el robot corre en Linux.
     tabla.to_csv(ruta_csv, index=False, encoding="utf-8", lineterminator="\n")
 

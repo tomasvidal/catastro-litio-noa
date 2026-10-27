@@ -28,7 +28,7 @@ No hace falta una base de datos: GitHub almacena, versiona y respalda gratis, y 
    ┌────────────────────▼─────────────────────┐
    │ 1. INGESTA          catastro_noa/fuentes  │  Jujuy SHP, Salta WFS (Catamarca en pausa)
    │ 2. HOMOLOGACIÓN     catastro_noa/...      │  esquema común + diccionarios/*.csv
-   │ 3. AUDITORÍA        (Fase 3)              │  compara con el snapshot anterior
+   │ 3. AUDITORÍA        catastro_noa/auditoria│  compara con el historial
    └────────────────────┬─────────────────────┘
                         │ git commit + push (solo si algo cambió)
    ┌────────────────────▼─────────────────────┐
@@ -48,44 +48,71 @@ No hace falta una base de datos: GitHub almacena, versiona y respalda gratis, y 
 ## Fase 3: de los diffs a tablas consultables
 
 Leer diffs de git sirve para auditar, pero no sirve para una app: sería lento y difícil
-de filtrar. Por eso, en cada corrida, el pipeline compara la foto nueva con la anterior y
-**guarda el resultado como tablas**:
+de filtrar. Por eso, en cada corrida, el pipeline compara la foto nueva con el estado
+anterior y **guarda el resultado como tablas** en `data/historial/`. El estado anterior es
+el propio historial (no la foto previa de git), así la comparación tolera que falten semanas.
 
 ### 1. `novedades.csv`: registro de eventos
 
 Una fila por cada cambio detectado. Se agregan filas y nunca se borran.
 
-| fecha | provincia | clave | nombre | evento | campo | antes | después |
+| fecha | provincia | clave | nombre | evento | campo | antes | despues |
 |---|---|---|---|---|---|---|---|
-| 2026-11-03 | jujuy | jujuy:2917-M-2022:MASA 46 | MASA 46 | cambio_etapa | etapa_administrativa | Solicitud de mina | Mina concedida |
-| 2026-11-03 | salta | salta:19944:TABALIZARO 09 | TABALIZARO 09 | cambio_titular | titular_clave | ALPHA LITHIUM ARGENTINA SA | OTRA EMPRESA SA |
-| 2026-11-04 | salta | salta:25001:NUEVA I | NUEVA I | alta | | | |
+| 2026-10-09 | jujuy | jujuy:2911 M 2022:MASA 40 | MASA 40 | cambio_etapa | etapa_administrativa | Solicitud de mina | Mina concedida |
+| 2026-10-09 | jujuy | jujuy:2912 M 2022:MASA 41 | MASA 41 | cambio_titular | titular_clave | MINERALES AUSTRALES SA | AUSTROID ARGENTINA RESOURCES SAU |
+| 2026-10-20 | salta | salta:18746:MARIANA 9 | MARIANA 9 | cambio_mineral | minerales | Boratos | Boratos; Litio |
 
 Tipos de evento: `alta`, `baja`, `cambio_titular`, `cambio_etapa`, `cambio_estado`,
-`cambio_mineral`, `cambio_superficie`, `cambio_geometria`.
+`cambio_mineral`, `cambio_superficie`, `cambio_geometria`, `cambio_expediente`, `cambio_nombre`.
+
+**Qué cuenta como novedad.** Solo un cambio en lo que publica la fuente. Si cambia un
+diccionario de `diccionarios/` (ej. se reclasifica un mineral) el valor homologado cambia,
+pero la fuente no: no se registra y la versión vigente se actualiza sin más. Los eventos
+de etapa, estado, mineral y titular se informan con el valor homologado, y solo si cambió
+también el texto original. La superficie calculada cambia como novedad con una diferencia
+mayor a 0,01 ha.
+
+**Primera vez que se ve una provincia:** entra como punto de partida, sin altas. Si una
+provincia falta en una foto, no se la da de baja.
 
 ### 2. `historial.parquet`: versiones con vigencia (SCD tipo 2)
 
 Cada vez que un derecho cambia, se cierra su versión anterior y se abre una nueva. Así se
-puede reconstruir el catastro **tal como estaba en cualquier fecha**:
+puede reconstruir el catastro **tal como estaba en cualquier fecha**. `vigente_desde` es
+inclusive y `vigente_hasta` exclusivo; vacío significa que la versión está vigente. La fecha es la de la
+descarga en que se detectó el cambio, no la del cambio real en la provincia.
 
 | clave | etapa_administrativa | titular_clave | vigente_desde | vigente_hasta |
 |---|---|---|---|---|
-| jujuy:2917-M-2022:MASA 46 | Solicitud de mina | AUSTROID ARGENTINA RESOURCES SAU | 2022-05-10 | 2026-11-02 |
-| jujuy:2917-M-2022:MASA 46 | Mina concedida | AUSTROID ARGENTINA RESOURCES SAU | 2026-11-03 | (vigente) |
+| jujuy:2911 M 2022:MASA 40 | Solicitud de mina | AUSTROID ARGENTINA RESOURCES SAU | 2026-09-14 | 2026-10-09 |
+| jujuy:2911 M 2022:MASA 40 | Mina concedida | AUSTROID ARGENTINA RESOURCES SAU | 2026-10-09 | (vigente) |
 
-### 3. La clave estable (requisito previo)
+### 3. La clave estable
 
-Para decir "este derecho cambió" hay que reconocerlo de una foto a la otra. El expediente
-solo no alcanza (en Salta hay expedientes repetidos) y el `id_fuente` de cada provincia no
-es estable. La propuesta es `provincia + expediente + nombre`, normalizados, con
-desempate por geometría cuando haya repetidos.
+Para decir "este derecho cambió" hay que reconocerlo de una foto a la otra. El `id_fuente`
+de cada provincia no es estable (Salta lo regenera entero entre descargas). La clave es `provincia:expediente:nombre` normalizados
+(mayúsculas, sin acentos ni signos) y se calcula en `catastro_noa/claves.py`. No alcanza
+sola: en Salta hay expedientes sin nombre con varios polígonos. Reglas de desempate:
+
+1. Un polígono que sigue igual (mismo `geom_hash`) conserva la clave que ya tenía.
+2. Si en el grupo sobra un solo derecho viejo y uno nuevo, son el mismo (cambió la forma).
+3. Los que quedan sin pareja son altas, con clave base + `#` + `geom_hash`.
+4. Un alta y una baja de la misma provincia que comparten un polígono único, y además el
+   nombre o el titular, son el mismo derecho con otro expediente (ej. `143-1412/18` pasa a
+   `143-1412/2018`): conserva la clave y se registra `cambio_expediente` o `cambio_nombre`.
+   Si cambian a la vez expediente, nombre y titular es otro derecho sobre el mismo terreno:
+   baja y alta.
+
+Las claves ya asignadas viven en el historial, así que una clave no cambia aunque cambie
+el polígono. Limitación: si en un grupo con varios polígonos cambia más de uno a la vez, no
+hay forma de saber cuáles corresponden y se registran como bajas y altas.
 
 ### 4. Historia hacia atrás
 
-Los catastros de años anteriores que tiene el equipo de investigación se procesan como
-si fueran fotos viejas, con su fecha. Así, desde el primer día la tabla de novedades
-cubre varios años (ej. 2022 → hoy) y no solo desde que arranca el robot.
+`scripts/reconstruir_historial.py` procesa los crudos guardados en `data/raw/` como si
+fueran fotos con su fecha y arma el historial desde cero. Los catastros de años anteriores
+que tiene el equipo de investigación se pueden cargar igual, para que la tabla de novedades
+cubra varios años (ej. 2022 → hoy) y no solo desde que arranca el robot.
 
 ## Fase 4: cómo responde la app "qué cambió en esta zona"
 
@@ -112,9 +139,9 @@ pasada** (un deslizador de fecha) y comparar dos fechas.
 | Archivo | ¿Se versiona? | Motivo |
 |---|---|---|
 | `data/raw/` | No | Crudos grandes; se pueden volver a bajar. |
-| `data/snapshot/catastro_noa.csv` | **Sí, cada semana** | Atributos de cada derecho más `geom_hash`. Es texto ordenado y sin columnas que cambian en cada corrida (`fuente`, `fecha_descarga`, `fecha_actualizacion_fuente`): git guarda solo las líneas que cambian. Es la fuente del historial. |
+| `data/snapshot/catastro_noa.csv` | **Sí, cada semana** | Atributos de cada derecho más `geom_hash`. Es texto ordenado y sin columnas que cambian en cada corrida (`fuente`, `fecha_descarga`, `fecha_actualizacion_fuente`, `id_fuente`): git guarda solo las líneas que cambian. Es la fuente del historial. |
 | `data/snapshot/geometrias.parquet` | Sí, solo si cambia alguna forma | Un polígono por `geom_hash`. Es binario (~1 MB), por eso solo se reescribe cuando el conjunto de hashes cambia. |
-| `data/historial/novedades.csv`, `historial.parquet` | Sí (Fase 3) | Chicos; son lo que consume la app. |
+| `data/historial/novedades.csv`, `historial.parquet` | Sí, solo si hay novedades | Chicos (el parquet ~0,5 MB); son lo que consume la app. |
 | `data/processed/` | No | Salidas locales: parquet completo y planilla de revisión. Se regeneran con el pipeline. |
 
 **Por qué la geometría va aparte.** Poner el polígono como texto (WKT) en el CSV haría que

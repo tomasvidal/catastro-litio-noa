@@ -61,3 +61,12 @@ def test_etapas(prov, tramite, adm, proy):
 ])
 def test_estados(prov, estado, esperado):
     assert T.estado(prov, estado) == esperado
+
+
+@pytest.mark.parametrize("tramite, esperado", [
+    ("MINA CONCEDIDA", "Vigente"),  # la resolucion es la que concede la mina
+    ("CANTERA", "Otro"),
+    (None, "Otro"),
+])
+def test_estado_resolucion_depende_del_tramite(tramite, esperado):
+    assert T.estado("jujuy", "Res 41-J-2026 (03/06/2026)", tramite) == esperado

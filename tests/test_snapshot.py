@@ -44,7 +44,7 @@ def test_hash_sin_geometria():
 def test_preparar_saca_columnas_volatiles_y_ordena():
     base = _base(("salta", "2", "B", CUADRADO), ("jujuy", "9", "A", CUADRADO), ("salta", "1", "C", CUADRADO))
     tabla, geoms = preparar(base)
-    for c in ("fuente", "fecha_descarga", "fecha_actualizacion_fuente", "geometry"):
+    for c in ("fuente", "fecha_descarga", "fecha_actualizacion_fuente", "id_fuente", "geometry"):
         assert c not in tabla
     assert list(tabla["expediente"]) == ["9", "1", "2"]
     assert len(geoms) == 1  # los tres comparten poligono: se guarda una vez
@@ -55,25 +55,25 @@ def test_preparar_es_estable_ante_el_orden_de_entrada():
     b = a.iloc[::-1].reset_index(drop=True)
     ta, ga = preparar(a)
     tb, gb = preparar(b)
-    assert ta.drop(columns="id_fuente").equals(tb.drop(columns="id_fuente"))
+    assert ta.equals(tb)
     assert list(ga["geom_hash"]) == list(gb["geom_hash"])
 
 
 def test_geometrias_solo_se_reescribe_si_cambia(tmp_path, monkeypatch):
     monkeypatch.setattr(snapshot, "DATA_SNAPSHOT", tmp_path)
     base = _base(("jujuy", "1", "A", CUADRADO))
-    snapshot.escribir_snapshot(base)
+    snapshot.escribir_snapshot(*preparar(base))
     ruta = tmp_path / "geometrias.parquet"
     antes = ruta.stat().st_mtime_ns
 
-    snapshot.escribir_snapshot(base.assign(nombre="A2"))  # cambia un atributo, no el poligono
+    snapshot.escribir_snapshot(*preparar(base.assign(nombre="A2")))  # cambia un atributo, no el poligono
     assert ruta.stat().st_mtime_ns == antes
 
-    snapshot.escribir_snapshot(_base(("jujuy", "1", "A", box(0, 0, 1, 1))))
+    snapshot.escribir_snapshot(*preparar(_base(("jujuy", "1", "A", box(0, 0, 1, 1)))))
     assert ruta.stat().st_mtime_ns != antes
 
 
 def test_csv_con_fin_de_linea_unix(tmp_path, monkeypatch):
     monkeypatch.setattr(snapshot, "DATA_SNAPSHOT", tmp_path)
-    snapshot.escribir_snapshot(_base(("jujuy", "1", "A", CUADRADO)))
+    snapshot.escribir_snapshot(*preparar(_base(("jujuy", "1", "A", CUADRADO))))
     assert b"\r" not in (tmp_path / "catastro_noa.csv").read_bytes()

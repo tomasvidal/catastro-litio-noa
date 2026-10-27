@@ -1,0 +1,77 @@
+fecha,provincia,clave,nombre,evento,campo,antes,despues
+2026-10-09,jujuy,jujuy:1382 CH 2010:KAIA 4,KAIA 4,cambio_titular,titular_clave,INTEGRA RECURSOS NATURALES SAY NEW ENERGY GROUP SA,NEW ENERGY GROUP SA
+2026-10-09,jujuy,jujuy:212 L 1996:CASA COLORADA,CASA COLORADA,baja,,,
+2026-10-09,jujuy,jujuy:2911 M 2022:MASA 40,MASA 40,cambio_estado,estado,En trámite,Vigente
+2026-10-09,jujuy,jujuy:2911 M 2022:MASA 40,MASA 40,cambio_etapa,etapa_administrativa,Solicitud de mina,Mina concedida
+2026-10-09,jujuy,jujuy:2911 M 2022:MASA 40,MASA 40,cambio_etapa,etapa_proyecto,Exploración,Explotación
+2026-10-09,jujuy,jujuy:2912 M 2022:MASA 41,MASA 41,cambio_estado,estado,En trámite,Vigente
+2026-10-09,jujuy,jujuy:2912 M 2022:MASA 41,MASA 41,cambio_etapa,etapa_administrativa,Solicitud de mina,Mina concedida
+2026-10-09,jujuy,jujuy:2912 M 2022:MASA 41,MASA 41,cambio_etapa,etapa_proyecto,Exploración,Explotación
+2026-10-09,jujuy,jujuy:2912 M 2022:MASA 41,MASA 41,cambio_titular,titular_clave,MINERALES AUSTRALES SA,AUSTROID ARGENTINA RESOURCES SAU
+2026-10-09,jujuy,jujuy:2913 M 2022:MASA 42,MASA 42,cambio_estado,estado,En trámite,Vigente
+2026-10-09,jujuy,jujuy:2913 M 2022:MASA 42,MASA 42,cambio_etapa,etapa_administrativa,Solicitud de mina,Mina concedida
+2026-10-09,jujuy,jujuy:2913 M 2022:MASA 42,MASA 42,cambio_etapa,etapa_proyecto,Exploración,Explotación
+2026-10-09,jujuy,jujuy:2913 M 2022:MASA 42,MASA 42,cambio_titular,titular_clave,MINERALES AUSTRALES SA,AUSTROID ARGENTINA RESOURCES SAU
+2026-10-09,jujuy,jujuy:2914 M 2022:MASA 43,MASA 43,cambio_estado,estado,En trámite,Vigente
+2026-10-09,jujuy,jujuy:2914 M 2022:MASA 43,MASA 43,cambio_etapa,etapa_administrativa,Solicitud de mina,Mina concedida
+2026-10-09,jujuy,jujuy:2914 M 2022:MASA 43,MASA 43,cambio_etapa,etapa_proyecto,Exploración,Explotación
+2026-10-09,jujuy,jujuy:2915 M 2022:MASA 44,MASA 44,cambio_estado,estado,En trámite,Vigente
+2026-10-09,jujuy,jujuy:2915 M 2022:MASA 44,MASA 44,cambio_etapa,etapa_administrativa,Solicitud de mina,Mina concedida
+2026-10-09,jujuy,jujuy:2915 M 2022:MASA 44,MASA 44,cambio_etapa,etapa_proyecto,Exploración,Explotación
+2026-10-09,jujuy,jujuy:2915 M 2022:MASA 44,MASA 44,cambio_titular,titular_clave,MINERALES AUSTRALES SA,AUSTROID ARGENTINA RESOURCES SAU
+2026-10-09,jujuy,jujuy:2916 M 2022:MASA 45,MASA 45,cambio_estado,estado,En trámite,Vigente
+2026-10-09,jujuy,jujuy:2916 M 2022:MASA 45,MASA 45,cambio_etapa,etapa_administrativa,Solicitud de mina,Mina concedida
+2026-10-09,jujuy,jujuy:2916 M 2022:MASA 45,MASA 45,cambio_etapa,etapa_proyecto,Exploración,Explotación
+2026-10-09,jujuy,jujuy:2916 M 2022:MASA 45,MASA 45,cambio_titular,titular_clave,MINERALES AUSTRALES SA,AUSTROID ARGENTINA RESOURCES SAU
+2026-10-09,jujuy,jujuy:2917 M 2022:MASA 46,MASA 46,cambio_estado,estado,En trámite,Vigente
+2026-10-09,jujuy,jujuy:2917 M 2022:MASA 46,MASA 46,cambio_etapa,etapa_administrativa,Solicitud de mina,Mina concedida
+2026-10-09,jujuy,jujuy:2917 M 2022:MASA 46,MASA 46,cambio_etapa,etapa_proyecto,Exploración,Explotación
+2026-10-09,jujuy,jujuy:2918 M 2022:MASA 47,MASA 47,cambio_estado,estado,En trámite,Vigente
+2026-10-09,jujuy,jujuy:2918 M 2022:MASA 47,MASA 47,cambio_etapa,etapa_administrativa,Solicitud de mina,Mina concedida
+2026-10-09,jujuy,jujuy:2918 M 2022:MASA 47,MASA 47,cambio_etapa,etapa_proyecto,Exploración,Explotación
+2026-10-09,jujuy,jujuy:2961 M 2022:MASA 48,MASA 48,cambio_etapa,etapa_administrativa,Solicitud de mina,Mina concedida
+2026-10-09,jujuy,jujuy:2961 M 2022:MASA 48,MASA 48,cambio_etapa,etapa_proyecto,Exploración,Explotación
+2026-10-09,jujuy,jujuy:3411 B 2024:,,cambio_titular,titular_clave,BELLOMO SA,QASIKAY SA
+2026-10-09,jujuy,jujuy:3412 B 2024:,,cambio_titular,titular_clave,BELLOMO SA,QASIKAY SA
+2026-10-09,jujuy,jujuy:3413 B 2024:,,cambio_titular,titular_clave,BELLOMO SA,QASIKAY SA
+2026-10-09,jujuy,jujuy:3534 B 2025:,,cambio_titular,titular_clave,BELLOMO SA,QASIKAY SA
+2026-10-09,jujuy,jujuy:3536 B 2025:,,cambio_titular,titular_clave,BELLOMO SA,QASIKAY SA
+2026-10-09,jujuy,jujuy:796 S 2007:LA SALADITA,LA SALADITA,cambio_estado,estado,En trámite,Vigente
+2026-10-09,jujuy,jujuy:90 B 1997:ROSARIO SUR,ROSARIO SUR,cambio_estado,estado,Vacante,Vigente
+2026-10-20,jujuy,jujuy:1117 P 2009:LA AGUADA I,LA AGUADA I,cambio_estado,estado,En trámite,Vigente
+2026-10-20,jujuy,jujuy:1261 M 2009:YOC,YOC,cambio_estado,estado,En trámite,Vigente
+2026-10-20,jujuy,jujuy:1267 J 2009:,,cambio_estado,estado,En trámite,Vigente
+2026-10-20,jujuy,jujuy:128 M 2003:HUGUITO,HUGUITO,cambio_estado,estado,En trámite,Vigente
+2026-10-20,jujuy,jujuy:1363 J 2010:QUEPENTE V,QUEPENTE V,cambio_estado,estado,En trámite,Vigente
+2026-10-20,jujuy,jujuy:1638 M 2011:,,cambio_estado,estado,En trámite,Vigente
+2026-10-20,jujuy,jujuy:1639 M 2011:,,cambio_estado,estado,En trámite,Vigente
+2026-10-20,jujuy,jujuy:2795 S 2021:EMA,EMA,cambio_estado,estado,En trámite,Vigente
+2026-10-20,jujuy,jujuy:2795 S 2021:EMA,EMA,cambio_etapa,etapa_administrativa,Solicitud de mina,Mina concedida
+2026-10-20,jujuy,jujuy:2795 S 2021:EMA,EMA,cambio_etapa,etapa_proyecto,Exploración,Explotación
+2026-10-20,jujuy,jujuy:2941 M 2022:CAUCHARI OESTE 1,CAUCHARI OESTE 1,cambio_estado,estado,En trámite,Vigente
+2026-10-20,jujuy,jujuy:2942 M 2022:CAUCHARI OESTE 2,CAUCHARI OESTE 2,cambio_estado,estado,En trámite,Vigente
+2026-10-20,jujuy,jujuy:2943 M 2022:CAUCHARI OESTE 3,CAUCHARI OESTE 3,cambio_estado,estado,En trámite,Vigente
+2026-10-20,jujuy,jujuy:3342 M 2024:PIRCA AMARILLA 1,PIRCA AMARILLA 1,cambio_estado,estado,En trámite,Vigente
+2026-10-20,jujuy,jujuy:3343 M 2024:PIRCA AMARILLA 2,PIRCA AMARILLA 2,cambio_estado,estado,En trámite,Vigente
+2026-10-20,jujuy,jujuy:3344 M 2024:PIRCA AMARILLA 3,PIRCA AMARILLA 3,cambio_estado,estado,En trámite,Vigente
+2026-10-20,jujuy,jujuy:3345 M 2024:PIRCA AMARILLA 4,PIRCA AMARILLA 4,cambio_estado,estado,En trámite,Vigente
+2026-10-20,jujuy,jujuy:3346 M 2024:PIRCA AMARILLA 5,PIRCA AMARILLA 5,cambio_estado,estado,En trámite,Vigente
+2026-10-20,jujuy,jujuy:3347 M 2024:PIRCA AMARILLA 6,PIRCA AMARILLA 6,cambio_estado,estado,En trámite,Vigente
+2026-10-20,jujuy,jujuy:3348 M 2024:PIRCA AMARILLA 7,PIRCA AMARILLA 7,cambio_estado,estado,En trámite,Vigente
+2026-10-20,jujuy,jujuy:3349 M 2024:PIRCA AMARILLA 8,PIRCA AMARILLA 8,cambio_estado,estado,En trámite,Vigente
+2026-10-20,jujuy,jujuy:3571 P 2025:PANEDILE,PANEDILE,cambio_estado,estado,En trámite,Vigente
+2026-10-20,salta,salta:0090302 207717 2025 0:,,cambio_expediente,expediente,0090302-207717/2025-0,302-207717/2025
+2026-10-20,salta,salta:143 1412 18:,,cambio_expediente,expediente,143-1412/18,143-1412/2018
+2026-10-20,salta,salta:143 141308 17:GUAYMAS,GUAYMAS,cambio_expediente,expediente,143-141308/17,143-141308/2017
+2026-10-20,salta,salta:18746:MARIANA 9,MARIANA 9,cambio_mineral,minerales,Boratos,Boratos; Litio
+2026-10-20,salta,salta:18748:MARIANA 7,MARIANA 7,cambio_mineral,minerales,Boratos,Boratos; Litio
+2026-10-20,salta,salta:18766:MAR DEL PLATA NUEVA,MAR DEL PLATA NUEVA,cambio_estado,estado,Vacante,Vigente
+2026-10-20,salta,salta:22159:PAYO LLULLAILLACO,PAYO LLULLAILLACO,cambio_estado,estado,Vacante,Anulado
+2026-10-20,salta,salta:22762:,,baja,,,
+2026-10-20,salta,salta:23716:CEBILAR,CEBILAR,baja,,,
+2026-10-20,salta,salta:23798:YESICA 18,YESICA 18,cambio_titular,titular_clave,ANDES LITHIUM SA,HANACOLLA SA
+2026-10-20,salta,salta:302 212409 24:,,cambio_expediente,expediente,302-212409/24,302-212409/2024
+2026-10-20,salta,salta:302 39577 25:DEL VALLE A,DEL VALLE A,cambio_expediente,expediente,302-39577/25,302-39577/2025
+2026-10-20,salta,salta:302 53047 26:,,cambio_expediente,expediente,302-53047/26,302-53047/2026
+2026-10-20,salta,salta:758823:BIANCA X,BIANCA X,cambio_etapa,etapa_administrativa,Manifestación,Mina
+2026-10-20,salta,salta:758823:BIANCA X,BIANCA X,cambio_etapa,etapa_proyecto,Exploración,Explotación

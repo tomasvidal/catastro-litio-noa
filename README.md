@@ -80,6 +80,15 @@ Foto versionada en `data/snapshot/` (es lo que commitea el workflow):
 - `geometrias.parquet`: un polígono por `geom_hash`. Solo se reescribe si cambia alguna
   forma.
 
+Y en `data/historial/`, la auditoría temporal:
+
+- `novedades.csv`: un evento por cada cambio detectado (altas, bajas y cambios de titular,
+  etapa, estado, mineral, superficie, geometría, expediente o nombre). Solo se agregan filas.
+- `historial.parquet`: cada versión de cada derecho con `vigente_desde` y `vigente_hasta`.
+
+Para reconstruir el historial desde los crudos guardados:
+`uv run python scripts/reconstruir_historial.py`.
+
 Salidas locales en `data/processed/` (ignoradas por git):
 
 - `catastro_noa.parquet`: base unificada con geometría (GeoParquet, EPSG:4326).
@@ -118,7 +127,9 @@ catastro-litio-noa/
 │   ├── titulares.py          clave comparable del titular
 │   ├── texto.py              limpieza de texto y números
 │   ├── salidas.py            escritura de parquet, csv y planilla de revisión
-│   └── snapshot.py           foto versionada: csv de atributos + geometrías por hash
+│   ├── snapshot.py           foto versionada: csv de atributos + geometrías por hash
+│   ├── claves.py             clave estable de cada derecho entre fotos
+│   └── auditoria.py          comparación con el historial: novedades y versiones con vigencia
 │
 ├── diccionarios/             reglas de homologación, editables y versionadas
 │   ├── minerales.csv         término -> mineral canónico -> grupo (origen: investigadores/propuesta)
@@ -129,13 +140,15 @@ catastro-litio-noa/
 │
 ├── scripts/                  scripts de la Fase 1 (se mantienen como registro)
 │   ├── explorar_fuentes.py   verificación de acceso a las 3 fuentes
-│   └── armar_relevamiento.py planilla de relevamiento para el equipo
+│   ├── armar_relevamiento.py planilla de relevamiento para el equipo
+│   └── reconstruir_historial.py  arma el historial desde los crudos de data/raw/
 │
 ├── data/
 │   ├── raw/                  descargas crudas por provincia y fecha (ignorado por git)
 │   ├── samples/              muestras chicas de la Fase 1 (versionadas)
 │   ├── processed/            salidas locales del pipeline (ignorado por git)
-│   └── snapshot/             foto versionada del catastro, la actualiza el workflow
+│   ├── snapshot/             foto versionada del catastro, la actualiza el workflow
+│   └── historial/            novedades.csv e historial.parquet (versiones con vigencia)
 │
 ├── .github/workflows/        actualizar.yml: descarga semanal y commit de la foto
 │

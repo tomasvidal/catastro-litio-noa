@@ -108,8 +108,8 @@ Estado homologado (propuesta): `Vigente`, `En trámite`, `Vacante`, `Anulado`,
 `Con recurso`, `Otro`. Reglas en [`diccionarios/estados.csv`](../diccionarios/estados.csv).
 
 Ojo al comparar provincias: en Salta, "Vigente" incluye manifestaciones y cateos en
-curso, y no solo concesiones otorgadas. En Jujuy, "CONCEDIDA", "REGISTRADA" e
-"INCLUIDA EN G. M. …" se tomaron como Vigente.
+curso, y no solo concesiones otorgadas. En Jujuy, "CONCEDIDA", "REGISTRADA",
+"INCLUIDA EN G. M. …" y las resoluciones de minas concedidas se tomaron como Vigente.
 
 ## Titulares
 
@@ -158,9 +158,11 @@ de la base (identificadores, nulos, superficies). Resultado y decisiones:
 - **Cesio, rubidio y estroncio siguen sin grupo.** Se evaluó asignarles uno (los metales
   alcalinos se asocian a las pegmatitas de litio), pero la planilla del equipo no los
   lista y se dejó la decisión al equipo (ver pendiente 5).
-- **Estado "Otro" en Jujuy:** 30 minas concedidas tienen como estado publicado solo
-  un número de resolución (`Res 41-J-2026 (03/06/2026)`), sin el estado en sí. Quedan
-  como `Otro`.
+- **Resoluciones como estado en Jujuy:** 30 minas concedidas tienen como estado publicado
+  solo un número de resolución (`Res 41-J-2026 (03/06/2026)`). En los 30 casos el trámite es
+  `MINA CONCEDIDA`: la resolución es la que concede la mina, así que se homologan como
+  `Vigente`. Si aparece una resolución con otro trámite, queda como `Otro` para revisarla.
+  La regla mira también el trámite (columna `tramite` de `diccionarios/estados.csv`).
 - **Superficies de Jujuy:** en 1.188 de 1.478 registros con superficie declarada, esta
   coincide con la calculada (±5 %). Los demás difieren por la propia fuente; la base
   conserva las dos columnas.

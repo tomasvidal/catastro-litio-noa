@@ -16,12 +16,12 @@ Documentación relacionada: [README](README.md) (alcance, estructura y cómo cor
 
 ## Dónde estamos
 
-- **Fase actual:** 2. Ingesta, homologación y pipeline CI/CD.
+- **Fase actual:** 3. Auditoría temporal y detección de cambios.
 - **Provincias activas:** Jujuy y Salta. Catamarca está en pausa (su servidor no
   responde).
 - **Última actualización:** 27/10/2026.
-- **Próxima tarea:** terminar 2.16 (probar el workflow en GitHub) y seguir con la Fase 3,
-  empezando por 3.1. La devolución del equipo (2.13 y 2.14) se incorpora cuando llegue.
+- **Próxima tarea:** confirmar 3.6 con la primera corrida del workflow. Después, 3.7
+  (registros con varios titulares). Pendientes del equipo: 2.13, 2.14, 3.5 y 3.8.
 
 ---
 
@@ -58,7 +58,7 @@ Hecho:
 - [x] 2.8 Geometrías en EPSG:4326, reparación de inválidas y superficie calculada.
 - [x] 2.9 Salidas: `data/processed/catastro_noa.parquet`, `.csv` y
       `revision_estandarizacion.xlsx`. `catastro_noa/salidas.py`.
-- [x] 2.10 Tests (`uv run pytest`, 83 casos).
+- [x] 2.10 Tests (`uv run pytest`, 110 casos).
 - [x] 2.19 Metodología documentada en `docs/metodologia.md` y arquitectura en
       `docs/arquitectura.md`.
 - [x] 2.20 Revisión de la clasificación de minerales (20/10/2026): nuevo tipo
@@ -90,10 +90,10 @@ Pendiente:
       columnas que cambian en cada corrida) y `data/snapshot/geometrias.parquet` (un polígono
       por hash, solo se reescribe si cambia alguna forma). `data/processed/` sigue ignorado.
       `catastro_noa/snapshot.py`, `docs/arquitectura.md`.
-- [~] 2.16 GitHub Actions: `.github/workflows/actualizar.yml`, semanal (lunes 06:00 AR) y a
+- [x] 2.16 GitHub Actions: `.github/workflows/actualizar.yml`, semanal (lunes 06:00 AR) y a
       mano. Corre `uv sync`, `uv run pytest` y `uv run python -m catastro_noa --estricto`, y
-      commitea `data/snapshot/` si hubo cambios. Falta probarlo en GitHub: lanzarlo a mano y
-      confirmar que Jujuy y Salta responden desde los servidores de Actions.
+      commitea `data/snapshot/` y `data/historial/` si hubo cambios. Probado en GitHub: Jujuy
+      y Salta responden desde los servidores de Actions.
 - [ ] 2.17 ⏸ Catamarca: averiguar si el visor tiene otras capas (`MINAS_1..4`) separadas
       por tipo de trámite, para completar `etapa_administrativa`.
 - [ ] 2.18 Revisar las superficies declaradas de Jujuy que no coinciden con las
@@ -103,19 +103,23 @@ Pendiente:
 
 Diseño en `docs/arquitectura.md`.
 
-- [ ] 3.1 Clave estable por derecho minero entre snapshots: provincia + expediente +
-      nombre normalizados, con desempate por geometría.
-- [ ] 3.2 Comparación entre dos snapshots: altas, bajas y cambios de titular, etapa,
-      estado, mineral, superficie y geometría.
-- [ ] 3.3 Tabla de eventos `data/historial/novedades.csv` (solo se agregan filas).
-- [ ] 3.4 Tabla histórica con vigencias (SCD 2) `data/historial/historial.parquet`.
+- [x] 3.1 Clave estable por derecho entre snapshots: `provincia:expediente:nombre`
+      normalizados, con desempate por geometría y reconocimiento de cambios de expediente o
+      nombre. `catastro_noa/claves.py`, `docs/arquitectura.md`.
+- [x] 3.2 Comparación contra el historial: altas, bajas y cambios de titular, etapa, estado,
+      mineral, superficie, geometría, expediente y nombre. `catastro_noa/auditoria.py`.
+- [x] 3.3 Tabla de eventos `data/historial/novedades.csv` (solo se agregan filas).
+- [x] 3.4 Tabla histórica con vigencias (SCD 2) `data/historial/historial.parquet`.
+      `scripts/reconstruir_historial.py` la arma desde los crudos de `data/raw/` (14/9 al
+      20/10: 76 novedades).
 - [ ] 3.5 👥 Cargar los catastros de años anteriores del equipo como snapshots
       fechados, para reconstruir la historia hacia atrás.
-- [ ] 3.6 Integrar la auditoría al workflow diario (2.16).
+- [~] 3.6 Integrar la auditoría al workflow (2.16): hecho en el pipeline y en el commit del
+      workflow. Falta confirmar la primera corrida en GitHub con el historial cargado.
 - [ ] 3.7 Separar los registros con varios titulares (cada provincia usa otro
       separador).
 - [ ] 3.8 👥 Agrupar titulares en grupos económicos (requiere criterio del equipo).
-- [ ] 3.9 Tests de la detección de cambios.
+- [x] 3.9 Tests de la detección de cambios. `tests/test_claves.py`, `tests/test_auditoria.py`.
 
 ## Fase 4: Plataforma web, documentación y cierre
 
