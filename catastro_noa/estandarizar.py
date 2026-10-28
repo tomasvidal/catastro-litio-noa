@@ -97,6 +97,24 @@ def _catamarca(g: gpd.GeoDataFrame) -> pd.DataFrame:
 
 _POR_PROVINCIA = {"jujuy": _jujuy, "salta": _salta, "catamarca": _catamarca}
 
+# Campos sin los que la provincia no se puede procesar (cada tupla: nombres alternativos). Si la
+# fuente cambia su formato y deja de traerlos, es mejor fallar (y conservar los datos anteriores)
+# que publicar derechos sin titular ni tramite y registrar cambios que no ocurrieron.
+_REQUERIDAS = {
+    "jujuy": [("expediente",), ("nombre",), ("titular_ac",), ("rg_tipo",), ("estado",), ("tipo_miner",)],
+    "salta": [("expediente",), ("concesionario",), ("tipo",), ("estado",), ("mineral",)],
+    "catamarca": [("EXPEDIENTE", "expediente", "EXPTE DGTL", "exptedgtl"), ("CONCSRIO", "concsrio"),
+                  ("MINERAL", "mineral")],
+}
+
+
+def validar(g: gpd.GeoDataFrame, provincia: str) -> None:
+    if len(g) == 0:
+        raise ValueError("la fuente devolvió 0 registros")
+    faltan = [alt[0] for alt in _REQUERIDAS[provincia] if not any(a in g.columns for a in alt)]
+    if faltan:
+        raise ValueError(f"la fuente ya no trae las columnas {faltan}: puede haber cambiado su formato")
+
 
 # --------------------------------------------------------------------------- geometria
 def _solo_poligonos(geom):
@@ -126,6 +144,7 @@ def estandarizar(crudo: Crudo, minerales: ClasificadorMinerales,
     if g.crs is None:
         g = g.set_crs("EPSG:4326")
     g = g.to_crs("EPSG:4326")
+    validar(g, prov)
 
     df = _POR_PROVINCIA[prov](g)
     for c in ("expediente", "nombre", "tramite_original", "estado_original", "mineral_original"):

@@ -58,6 +58,29 @@ def preparar(base: gpd.GeoDataFrame) -> tuple[pd.DataFrame, gpd.GeoDataFrame]:
     return tabla, geoms
 
 
+def conservar(tabla: pd.DataFrame, geoms: gpd.GeoDataFrame,
+              provincias: list[str]) -> tuple[pd.DataFrame, gpd.GeoDataFrame]:
+    """Agrega a la foto nueva las filas y poligonos de la foto anterior de `provincias` (las que no
+    se pudieron descargar), para que sigan publicadas con sus ultimos datos."""
+    ruta_csv, ruta_geo = DATA_SNAPSHOT / "catastro_noa.csv", DATA_SNAPSHOT / "geometrias.parquet"
+    if not provincias or not ruta_csv.exists():
+        return tabla, geoms
+    # Como texto: las filas conservadas se vuelven a escribir igual que estaban.
+    previa = pd.read_csv(ruta_csv, dtype=str)
+    previa = previa[previa["provincia"].isin(provincias)]
+    if previa.empty:
+        return tabla, geoms
+    tabla = pd.concat([tabla, previa], ignore_index=True)
+    orden = [c for c in ORDEN if c in tabla]
+    tabla = tabla.sort_values(orden, na_position="last", kind="stable").reset_index(drop=True)
+    if ruta_geo.exists():
+        viejas = gpd.read_parquet(ruta_geo)
+        viejas = viejas[viejas["geom_hash"].isin(previa["geom_hash"].dropna())]
+        geoms = (gpd.GeoDataFrame(pd.concat([geoms, viejas], ignore_index=True), crs=geoms.crs)
+                 .drop_duplicates("geom_hash").sort_values("geom_hash").reset_index(drop=True))
+    return tabla, geoms
+
+
 def escribir_snapshot(tabla: pd.DataFrame, geoms: gpd.GeoDataFrame) -> dict[str, str]:
     """Escribe la foto. `tabla` y `geoms` son lo que devuelve `preparar`; la clave
     (catastro_noa.claves) ya tiene que estar asignada."""

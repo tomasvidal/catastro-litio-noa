@@ -62,8 +62,18 @@ def test_jujuy_reproyecta_y_no_copia_contacto():
 
 def test_geometria_invalida_se_repara():
     moño = Polygon([(-66.5, -23.5), (-66.49, -23.49), (-66.49, -23.5), (-66.5, -23.49)])
-    g = gpd.GeoDataFrame([{"fid": 1, "tipo": "Mina", "mineral": "Li", "area": "1,5 ha"}],
+    g = gpd.GeoDataFrame([{"fid": 1, "expediente": "1", "concesionario": "X", "tipo": "Mina",
+                           "estado": "Vigente", "mineral": "Li", "area": "1,5 ha"}],
                          geometry=[moño], crs="EPSG:4326")
     r = estandarizar(Crudo("salta", g, Path("x"), "test", HOY, False), M, T).iloc[0]
     assert r.geometry.is_valid and r.geometry.geom_type in ("Polygon", "MultiPolygon")
     assert r.superficie_ha_fuente == 1.5
+
+
+def test_si_la_fuente_cambia_de_formato_falla_en_vez_de_publicar_vacios():
+    g = gpd.GeoDataFrame([{"fid": 1, "expte": "1", "mineral": "Li"}], geometry=[CUADRADO], crs="EPSG:4326")
+    with pytest.raises(ValueError, match="concesionario"):
+        estandarizar(Crudo("salta", g, Path("x"), "test", HOY, False), M, T)
+    vacio = gpd.GeoDataFrame({"expediente": []}, geometry=[], crs="EPSG:4326")
+    with pytest.raises(ValueError, match="0 registros"):
+        estandarizar(Crudo("jujuy", vacio, Path("x"), "test", HOY, False), M, T)
