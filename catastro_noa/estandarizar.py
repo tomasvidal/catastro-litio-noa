@@ -17,12 +17,12 @@ from pyproj import Geod
 from .fuentes import Crudo
 from .minerales import ClasificadorMinerales
 from .texto import clave, limpiar, numero
-from .titulares import clave_titular, titular_publicado
+from .titulares import clave_titular, separar_titulares, titular_publicado
 from .tramites import ClasificadorTramites
 
 COLUMNAS = [
     "provincia", "id_fuente", "expediente", "nombre", "titular", "titular_clave",
-    "tramite_original", "estado_original", "etapa_administrativa", "etapa_proyecto", "estado",
+    "titulares_claves", "n_titulares", "tramite_original", "estado_original", "etapa_administrativa", "etapa_proyecto", "estado",
     "mineral_original", "minerales", "grupos_minerales", "categoria_codigo", "tiene_litio",
     "mineral_sin_clasificar", "departamento", "superficie_ha_fuente", "superficie_ha_calculada",
     "fecha_inicio", "fecha_actualizacion_fuente", "fuente", "fecha_descarga", "geometry",
@@ -134,6 +134,9 @@ def estandarizar(crudo: Crudo, minerales: ClasificadorMinerales,
     df.insert(0, "provincia", prov)
 
     df["titular_clave"] = df["titular"].map(clave_titular)
+    separados = df["titular"].map(lambda v: separar_titulares(v, prov))
+    df["titulares_claves"] = separados.map(lambda t: "|".join(t) or None)
+    df["n_titulares"] = separados.map(len)
     df["titular"] = df["titular"].map(titular_publicado)
     df["departamento"] = df["departamento"].map(lambda v: clave(str(v).strip('{}"')) if limpiar(v) else None)
 

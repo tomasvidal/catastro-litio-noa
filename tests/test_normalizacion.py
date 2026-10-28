@@ -1,7 +1,7 @@
 import pytest
 
 from catastro_noa.texto import clave, limpiar, numero
-from catastro_noa.titulares import clave_titular, titular_publicado
+from catastro_noa.titulares import clave_titular, separar_titulares, titular_publicado
 from catastro_noa.tramites import ClasificadorTramites
 
 T = ClasificadorTramites()
@@ -70,3 +70,20 @@ def test_estados(prov, estado, esperado):
 ])
 def test_estado_resolucion_depende_del_tramite(tramite, esperado):
     assert T.estado("jujuy", "Res 41-J-2026 (03/06/2026)", tramite) == esperado
+
+
+@pytest.mark.parametrize("v, provincia, esperado", [
+    ("PEREZ JUAN Y GOMEZ ANA", "jujuy", ["PEREZ JUAN", "GOMEZ ANA"]),
+    ("PEREZ JUAN, GOMEZ ANA Y LOPEZ LUIS", "jujuy", ["PEREZ JUAN", "GOMEZ ANA", "LOPEZ LUIS"]),
+    ("PEREZ JUAN - ACME S.A.", "jujuy", ["PEREZ JUAN", "ACME SA"]),
+    ("PEREZ JUAN y GOMEZ ANA", "jujuy", ["PEREZ JUAN", "GOMEZ ANA"]),
+    ("ROCHA SOILO E HIJOS", "jujuy", ["ROCHA SOILO E HIJOS"]),
+    ("ARGENTINA LITIO Y ENERGIA S. A.", "jujuy", ["ARGENTINA LITIO Y ENERGIA SA"]),
+    ("PEREZ JUAN Y PEREZ JUAN", "jujuy", ["PEREZ JUAN"]),
+    ("PEREZ JUAN,SERVICIOS Y PROYECTOS MINEROS S.R.L.", "salta", ["PEREZ JUAN", "SERVICIOS Y PROYECTOS MINEROS SRL"]),
+    ("POTASIO Y LITIO DE ARGENTINA S.A.", "salta", ["POTASIO Y LITIO DE ARGENTINA SA"]),
+    ("Vacancia Solicitada", "salta", []),
+    (None, "jujuy", []),
+])
+def test_separar_titulares(v, provincia, esperado):
+    assert separar_titulares(v, provincia) == esperado

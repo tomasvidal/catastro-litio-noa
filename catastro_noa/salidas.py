@@ -29,7 +29,7 @@ _LEEME = [
 _ORIGINALES = ["id_fuente", "expediente", "nombre", "titular", "tramite_original", "estado_original",
                "mineral_original", "departamento", "superficie_ha_fuente", "fecha_inicio",
                "fecha_actualizacion_fuente"]
-_HOMOLOGADAS = ["titular_clave", "etapa_administrativa", "etapa_proyecto", "estado", "minerales",
+_HOMOLOGADAS = ["titular_clave", "titulares_claves", "n_titulares","etapa_administrativa", "etapa_proyecto", "estado", "minerales",
                 "grupos_minerales", "categoria_codigo", "tiene_litio", "mineral_sin_clasificar",
                 "superficie_ha_calculada"]
 _COLOR_ORIGINAL, _COLOR_HOMOLOGADA, _COLOR_CONTROL = "2F75B5", "548235", "A6A6A6"
