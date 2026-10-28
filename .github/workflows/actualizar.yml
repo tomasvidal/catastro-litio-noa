@@ -1,10 +1,11 @@
 name: Actualizar catastro
 
-# Los lunes a las 09:00 UTC (06:00 en Argentina). También se puede correr a mano
-# desde la pestaña Actions ("Run workflow").
+# Todos los días a las 09:00 UTC (06:00 en Argentina), por un tiempo, para ver cada cuánto
+# cambian los datos. Después se vuelve a semanal ("0 9 * * 1"). También se puede correr a
+# mano desde la pestaña Actions ("Run workflow").
 on:
   schedule:
-    - cron: "0 9 * * 1"
+    - cron: "0 9 * * *"
   workflow_dispatch:
 
 permissions:
