@@ -7,8 +7,8 @@ Uso:
 Que hace:
   - Jujuy    : descarga directa del SHP del Juzgado Administrativo de Minas.
   - Salta    : WFS del GeoServer de geoportal.salta.gob.ar (capa "Catastro Minero").
-  - Catamarca: WFS del GeoServer de nodoide.catamarca.gob.ar (capa idecat:MINAS_*),
-               que esta detras de Cloudflare -> se usa cloudscraper.
+  - Catamarca: WFS del GeoServer de nodoide.catamarca.gob.ar (capa idecat:MINAS_*).
+               La capa ya no se publica; ver scripts/armar_relevamiento.py.
 
 Para cada provincia imprime el total de registros y las primeras filas, y guarda
 una muestra en data/samples/<provincia>.csv (sin geometria, sin datos de contacto).
@@ -23,7 +23,6 @@ import unicodedata
 import zipfile
 from pathlib import Path
 
-import cloudscraper
 import geopandas as gpd
 import httpx
 import pandas as pd
@@ -129,7 +128,7 @@ def get_salta(n: int) -> tuple[int, pd.DataFrame]:
 def get_catamarca(n: int) -> tuple[int, pd.DataFrame]:
     base = "https://nodoide.catamarca.gob.ar/geoserver/wfs"
     tn = "idecat:MINAS_19022026"
-    s = cloudscraper.create_scraper(browser={"browser": "chrome", "platform": "windows", "desktop": True})
+    s = httpx.Client(follow_redirects=True, headers={"User-Agent": "Mozilla/5.0"})
     total = _wfs_hits(s, base, tn)
     g = _wfs_sample(s, base, tn, n).drop(columns="geometry")
     out = pd.DataFrame({

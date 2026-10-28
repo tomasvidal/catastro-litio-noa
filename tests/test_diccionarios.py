@@ -1,50 +1,32 @@
 """
-Chequea que diccionarios/minerales.csv respete las planillas del equipo de
-investigacion (docs/insumos/Denominaciones_provinciales_minerales.xlsx):
-todo termino de la planilla esta en el diccionario y en el mismo grupo.
-Si el equipo actualiza la planilla, este test marca que hay que sumar terminos.
+Chequea que diccionarios/minerales.csv respete la planilla de minerales del equipo
+de investigacion: todo termino de la planilla esta en el diccionario y en el mismo
+grupo. Los terminos de la planilla estan copiados en tests/datos/planilla_minerales.csv
+(una fila por termino, con el grupo = la solapa donde estaba). Si el equipo actualiza
+la planilla, se actualiza ese CSV y este test marca que hay que sumar terminos.
 """
 
-import openpyxl
 import pandas as pd
-import pytest
 
 from catastro_noa import DICCIONARIOS, RAIZ
 from catastro_noa.minerales import GRUPOS
 from catastro_noa.texto import clave
 
-PLANILLA = RAIZ / "docs" / "insumos" / "Denominaciones_provinciales_minerales.xlsx"
-SOLAPAS = {  # solapa de la planilla -> grupo del diccionario
-    "Metalíferos": "Metalíferos",
-    "Litio y potasio": "Litio y potasio",
-    "Depósitos evaporíticos": "Depósitos evaporíticos",
-    "Tierras raras": "Tierras raras",
-    "Canteras, rocas de aplicación y": "Canteras, rocas de aplicación y otros minerales",
-}
+PLANILLA = RAIZ / "tests" / "datos" / "planilla_minerales.csv"
 # Diferencias conocidas con la planilla, pendientes de validar (ver docs/metodologia.md).
 EXCEPCIONES = {("Canteras, rocas de aplicación y otros minerales", "BERILIO")}
 
 D = pd.read_csv(DICCIONARIOS / "minerales.csv", dtype=str, keep_default_na=False)
+P = pd.read_csv(PLANILLA, dtype=str, keep_default_na=False)
 
 
-def _terminos_planilla():
-    wb = openpyxl.load_workbook(PLANILLA, read_only=True)
-    for solapa, grupo in SOLAPAS.items():
-        for fila in wb[solapa].iter_rows(values_only=True):
-            v = fila[0] if fila else None
-            if v is None or clave(v) == clave(solapa):  # la primera fila repite el titulo
-                continue
-            yield grupo, str(v).strip()
-
-
-@pytest.mark.skipif(not PLANILLA.exists(), reason="falta la planilla del equipo")
 def test_planilla_cubierta():
     por_termino = {}
     for r in D.itertuples(index=False):
         k = r.termino if r.tipo == "simbolo" else clave(r.termino)
         por_termino[k] = r.grupo
     faltan, otro_grupo = [], []
-    for grupo, termino in _terminos_planilla():
+    for grupo, termino in P.itertuples(index=False):
         k = termino if termino in por_termino else clave(termino)
         if k not in por_termino:
             faltan.append(termino)
@@ -52,6 +34,12 @@ def test_planilla_cubierta():
             otro_grupo.append((termino, grupo, por_termino[k]))
     assert not faltan, f"terminos de la planilla que no estan en el diccionario: {faltan}"
     assert not otro_grupo, f"terminos en otro grupo que en la planilla: {otro_grupo}"
+
+
+def test_planilla_bien_formada():
+    assert len(P) > 100
+    assert set(P["grupo"]) <= set(GRUPOS)
+    assert (P["termino"] != "").all()
 
 
 def test_diccionario_bien_formado():

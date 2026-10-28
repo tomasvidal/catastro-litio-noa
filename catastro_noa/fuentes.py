@@ -10,9 +10,9 @@ Tambien se puede dejar a mano un archivo en esa carpeta (ej. una descarga manual
   - Salta    : WFS de geoportal.salta.gob.ar (capa "Catastro Minero").
   - Catamarca: WFS de nodoide.catamarca.gob.ar. El nombre de la capa lleva la fecha
                de actualizacion (idecat:MINAS_<DDMMAAAA>) y cambia sin aviso, asi que
-               se busca la mas reciente en el GetCapabilities. Si no hay capa, se usa
-               el export estatico del visor de mineria (mismos campos, sin estado ni
-               superficie). El host esta detras de Cloudflare -> cloudscraper.
+               se busca la mas reciente en el GetCapabilities. Si no hay capa (o el
+               WFS rechaza el pedido), se usa el export estatico del visor de mineria
+               (mismos campos, sin estado ni superficie).
 """
 
 from __future__ import annotations
@@ -25,7 +25,6 @@ import zipfile
 from dataclasses import dataclass
 from pathlib import Path
 
-import cloudscraper
 import geopandas as gpd
 import httpx
 
@@ -82,10 +81,13 @@ def _bajar_salta(hoy: dt.date) -> tuple[Path, str]:
     return _guardar("salta", r.content, "geojson", hoy), f"geoportal.salta.gob.ar WFS {SALTA_CAPA}"
 
 
-def _capa_catamarca(s) -> str | None:
-    r = s.get(CATAMARCA_WFS, params={"service": "WFS", "version": "2.0.0",
-                                     "request": "GetCapabilities"}, timeout=120)
-    r.raise_for_status()
+def _capa_catamarca(c: httpx.Client) -> str | None:
+    try:
+        r = c.get(CATAMARCA_WFS, params={"service": "WFS", "version": "2.0.0",
+                                         "request": "GetCapabilities"}, timeout=120)
+        r.raise_for_status()
+    except httpx.HTTPError:  # el WFS a veces rechaza pedidos automaticos: se usa el visor
+        return None
     capas = set(re.findall(r"idecat:MINAS_(\d{8})", r.text))
     if not capas:
         return None
@@ -94,15 +96,15 @@ def _capa_catamarca(s) -> str | None:
 
 
 def _bajar_catamarca(hoy: dt.date) -> tuple[Path, str]:
-    s = cloudscraper.create_scraper(browser={"browser": "chrome", "platform": "windows", "desktop": True})
-    capa = _capa_catamarca(s)
-    if capa:
-        r = s.get(CATAMARCA_WFS, params=_wfs_params(capa), timeout=300)
+    with httpx.Client(timeout=300, follow_redirects=True, headers=UA) as c:
+        capa = _capa_catamarca(c)
+        if capa:
+            r = c.get(CATAMARCA_WFS, params=_wfs_params(capa))
+            r.raise_for_status()
+            json.loads(r.content)
+            return _guardar("catamarca", r.content, "geojson", hoy), f"nodoide.catamarca.gob.ar WFS {capa}"
+        r = c.get(CATAMARCA_VISOR)
         r.raise_for_status()
-        json.loads(r.content)
-        return _guardar("catamarca", r.content, "geojson", hoy), f"nodoide.catamarca.gob.ar WFS {capa}"
-    r = s.get(CATAMARCA_VISOR, timeout=300)
-    r.raise_for_status()
     return _guardar("catamarca", r.content, "js", hoy), "nodoide.catamarca.gob.ar visor de mineria (qgis2web)"
 
 

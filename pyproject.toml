@@ -8,9 +8,10 @@ dependencies = [
     "geopandas>=1.0",
     "pyogrio>=0.9",
     "pandas>=2.2",
-    "openpyxl>=3.1",   # leer el .xlsx de Jujuy
-    "cloudscraper>=1.2",  # el geoserver de Catamarca esta detras de Cloudflare
+    "openpyxl>=3.1",  # el geoserver de Catamarca esta detras de Cloudflare
     "pyarrow>=17",
+    "streamlit>=1.57",
+    "pydeck>=0.9.3",
 ]
 
 [dependency-groups]
