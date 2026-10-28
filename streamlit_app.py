@@ -1,12 +1,15 @@
 """
-App de consulta del catastro minero de Jujuy y Salta.
+App de consulta del catastro minero del NOA.
 
-Lee solo los archivos que versiona el workflow de actualizacion (data/snapshot/ y
-data/historial/), asi que cada commit del robot actualiza la app sin pasos extra.
+Lee solo los archivos que versiona el workflow de actualizacion (data/snapshot/,
+data/historial/ y data/estado_fuentes.csv), asi que cada commit del robot actualiza la app
+sin pasos extra. Las provincias, etapas y estados salen de los datos: si se suma una
+provincia o aparece una etapa nueva, la app la muestra sin tocar el codigo.
 
     uv run streamlit run streamlit_app.py
 """
 
+import datetime as dt
 import json
 
 import geopandas as gpd
@@ -14,13 +17,16 @@ import pandas as pd
 import pydeck as pdk
 import streamlit as st
 
-from catastro_noa import DATA_HISTORIAL, DATA_SNAPSHOT
+from catastro_noa import DATA_HISTORIAL, DATA_SNAPSHOT, ESTADO_FUENTES
 from catastro_noa.minerales import GRUPOS
 from catastro_noa.texto import clave
 
 SIN_GRUPO = "Sin mineral informado"
-PROVINCIAS = {"jujuy": "Jujuy", "salta": "Salta"}
-ETAPAS = ("Exploración", "Explotación", "Canteras y otros")
+SIN_ETAPA = "Sin etapa asignada"
+ETAPAS = ("Exploración", "Explotación", "Canteras y otros")  # orden de la leyenda; otras van al final
+# Si el robot no registra ningun intento en estos dias, se avisa que la actualizacion se detuvo.
+# Alcanza tanto para la frecuencia diaria como para la semanal.
+DIAS_SIN_ACTUALIZAR = 8
 COLORES_ETAPA = {  # RGBA para el mapa; mismos tonos que la leyenda
     "Exploración": [242, 183, 5, 150],
     "Explotación": [235, 87, 87, 150],
@@ -44,7 +50,8 @@ EVENTOS = {
 @st.cache_data(ttl="1h")
 def cargar_base() -> pd.DataFrame:
     b = pd.read_csv(DATA_SNAPSHOT / "catastro_noa.csv", dtype=str, keep_default_na=False)
-    b["provincia_nombre"] = b["provincia"].map(PROVINCIAS).fillna(b["provincia"].str.title())
+    b["provincia_nombre"] = b["provincia"].str.title()
+    b["etapa"] = b["etapa_proyecto"].replace("", SIN_ETAPA)
     b["superficie_ha"] = pd.to_numeric(b["superficie_ha_calculada"], errors="coerce")
     b["tiene_litio"] = b["tiene_litio"].eq("True")
     b["grupos"] = b["grupos_minerales"].map(lambda s: s.split("; ") if s else [SIN_GRUPO])
@@ -62,11 +69,26 @@ def cargar_geometrias() -> gpd.GeoDataFrame:
 
 @st.cache_data(ttl="1h")
 def cargar_novedades() -> pd.DataFrame:
-    n = pd.read_csv(DATA_HISTORIAL / "novedades.csv", dtype=str, keep_default_na=False)
+    ruta = DATA_HISTORIAL / "novedades.csv"
+    columnas = ["fecha", "provincia", "clave", "nombre", "evento", "campo", "antes", "despues"]
+    n = (pd.read_csv(ruta, dtype=str, keep_default_na=False) if ruta.exists()
+         else pd.DataFrame(columns=columnas, dtype=str))
     n["fecha"] = pd.to_datetime(n["fecha"])
-    n["provincia_nombre"] = n["provincia"].map(PROVINCIAS).fillna(n["provincia"].str.title())
+    n["provincia_nombre"] = n["provincia"].str.title()
     n["evento_nombre"] = n["evento"].map(EVENTOS).fillna(n["evento"])
     return n.sort_values("fecha", ascending=False)
+
+
+@st.cache_data(ttl="1h")
+def cargar_estado() -> pd.DataFrame:
+    """Una fila por provincia: ultimo intento de descarga, ultima descarga buena y resultado."""
+    if not ESTADO_FUENTES.exists():
+        return pd.DataFrame(columns=["provincia", "ultimo_intento", "ultima_descarga_ok", "resultado"])
+    e = pd.read_csv(ESTADO_FUENTES, dtype=str, keep_default_na=False)
+    for c in ("ultimo_intento", "ultima_descarga_ok"):
+        e[c] = pd.to_datetime(e[c], errors="coerce")
+    e["provincia_nombre"] = e["provincia"].str.title()
+    return e
 
 
 @st.cache_data(ttl="1h", max_entries=20)
@@ -86,16 +108,18 @@ st.set_page_config(page_title="Catastro minero NOA", page_icon=":material/landsc
 
 base = cargar_base()
 novedades = cargar_novedades()
+estado = cargar_estado()
+provincias = sorted(base["provincia_nombre"].unique())
+etapas = [e for e in ETAPAS if e in set(base["etapa"])] + sorted(set(base["etapa"]) - set(ETAPAS))
 
 # --- Filtros -------------------------------------------------------------------------
 with st.sidebar:
     st.header("Filtros")
-    f_prov = st.pills("Provincia", list(PROVINCIAS.values()), selection_mode="multi",
-                      default=list(PROVINCIAS.values()))
+    f_prov = st.pills("Provincia", provincias, selection_mode="multi", default=provincias)
     f_litio = st.toggle("Solo con litio")
     f_grupos = st.multiselect("Grupo de mineral", [*GRUPOS, SIN_GRUPO],
                               placeholder="Todos los grupos")
-    f_etapas = st.pills("Etapa del proyecto", ETAPAS, selection_mode="multi", default=list(ETAPAS))
+    f_etapas = st.pills("Etapa del proyecto", etapas, selection_mode="multi", default=etapas)
     f_estados = st.multiselect("Estado", sorted(base["estado"].unique()),
                                placeholder="Todos los estados")
     f_deptos = st.multiselect(
@@ -104,7 +128,7 @@ with st.sidebar:
         placeholder="Todos los departamentos")
     f_titular = st.text_input("Titular contiene", placeholder="Ej.: litio, minera, SA")
 
-filtro = base["provincia_nombre"].isin(f_prov) & base["etapa_proyecto"].isin(f_etapas)
+filtro = base["provincia_nombre"].isin(f_prov) & base["etapa"].isin(f_etapas)
 if f_litio:
     filtro &= base["tiene_litio"]
 if f_grupos:
@@ -118,12 +142,23 @@ if f_titular.strip():
 sel = base[filtro]
 
 # --- Encabezado ----------------------------------------------------------------------
-st.title("Catastro minero de Jujuy y Salta")
-ultimo = novedades["fecha"].max()
+st.title("Catastro minero del NOA")
+fechas = [f"{r.provincia_nombre}: datos al **{r.ultima_descarga_ok:%d/%m/%Y}**"
+          for r in estado.itertuples() if pd.notna(r.ultima_descarga_ok)]
 st.caption(
-    "Derechos mineros publicados por los catastros oficiales de cada provincia, unificados "
-    "y homologados. Se descargan automáticamente todos los días."
-    + (f" Último cambio registrado: **{ultimo:%d/%m/%Y}**." if pd.notna(ultimo) else ""))
+    f"Derechos mineros publicados por los catastros oficiales de {' y '.join(provincias)}, "
+    "unificados y homologados. Se descargan automáticamente de las fuentes oficiales."
+    + (" " + " · ".join(fechas) + "." if fechas else ""))
+
+ultimo_intento = estado["ultimo_intento"].max()
+if pd.notna(ultimo_intento) and (pd.Timestamp(dt.date.today()) - ultimo_intento).days > DIAS_SIN_ACTUALIZAR:
+    st.warning(f"La actualización automática no corre desde el {ultimo_intento:%d/%m/%Y}: "
+               "los datos pueden estar desactualizados.", icon=":material/sync_problem:")
+for r in estado[estado["resultado"] == "error"].itertuples():
+    desde = f"del {r.ultima_descarga_ok:%d/%m/%Y}" if pd.notna(r.ultima_descarga_ok) else "anteriores"
+    st.warning(f"No se pudieron descargar datos nuevos de {r.provincia_nombre} en el último intento "
+               f"({r.ultimo_intento:%d/%m/%Y}). Se muestran los datos {desde}.",
+               icon=":material/cloud_off:")
 
 with st.container(horizontal=True):
     st.metric("Derechos mineros", f"{len(sel):,}".replace(",", "."), border=True)
@@ -163,7 +198,8 @@ if vista == ":material/map: Mapa":
                      map_provider="carto", map_style=None),  # None: sigue el tema claro/oscuro
             height=620, alt="Mapa de los derechos mineros filtrados, coloreados por etapa")
         st.markdown(" · ".join(
-            f":{c}[■] {e}" for e, c in zip(ETAPAS, ("orange", "red", "blue"))))
+            [f":{c}[■] {e}" for e, c in zip(ETAPAS, ("orange", "red", "blue"))]
+            + [f":gray[■] {e}" for e in sorted(set(sel["etapa"]) - set(ETAPAS))]))
 
 # --- Tabla ---------------------------------------------------------------------------
 elif vista == ":material/table: Tabla":
