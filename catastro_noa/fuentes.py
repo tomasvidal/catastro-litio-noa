@@ -7,7 +7,9 @@ disponible, para que una caida de un geoportal no frene al resto del pipeline.
 Tambien se puede dejar a mano un archivo en esa carpeta (ej. una descarga manual).
 
   - Jujuy    : shapefile de mineriajujuy.gob.ar (link con token, se saca de la landing).
-  - Salta    : WFS de geoportal.salta.gob.ar (capa "Catastro Minero").
+  - Salta    : WFS de geoportal.salta.gob.ar. La capa se busca por su titulo ("Catastro
+               Minero") en el GetCapabilities, porque el nombre es un codigo que cambia si la
+               vuelven a publicar; si no se encuentra, se prueba con el ultimo nombre conocido.
   - Catamarca: WFS de nodoide.catamarca.gob.ar. El nombre de la capa lleva la fecha
                de actualizacion (idecat:MINAS_<DDMMAAAA>) y cambia sin aviso, asi que
                se busca la mas reciente en el GetCapabilities. Si no hay capa (o el
@@ -34,7 +36,8 @@ UA = {"User-Agent": "Mozilla/5.0 (catastro-litio-noa; UNSAM)"}
 
 JUJUY_LANDING = "https://www.mineriajujuy.gob.ar/site/jam_catastro.php"
 SALTA_WFS = "https://geoportal.salta.gob.ar/geoserver/wfs"
-SALTA_CAPA = "geonode:poligonos_adaf55f39328ff45c8c60e94eb13a7a0"
+SALTA_TITULO = "Catastro Minero"
+SALTA_CAPA = "geonode:poligonos_adaf55f39328ff45c8c60e94eb13a7a0"  # ultimo nombre conocido (10/2026)
 CATAMARCA_WFS = "https://nodoide.catamarca.gob.ar/geoserver/wfs"
 CATAMARCA_VISOR = "https://nodoide.catamarca.gob.ar/mineria_visor/data/MINAS_5.js"
 
@@ -65,20 +68,40 @@ def _guardar(provincia: str, contenido: bytes, ext: str, hoy: dt.date) -> Path:
 # --------------------------------------------------------------------------- descargas
 def _bajar_jujuy(hoy: dt.date) -> tuple[Path, str]:
     with httpx.Client(verify=False, timeout=180, follow_redirects=True, headers=UA) as c:
-        m = re.search(r"download_catastrominero\.php\?d=[0-9a-f]+&t=shp", c.get(JUJUY_LANDING).text)
+        m = re.search(r"download_catastrominero\.php\?d=[0-9a-f]+&(?:amp;)?t=shp", c.get(JUJUY_LANDING).text)
         if not m:
             raise RuntimeError("no se encontro el link de descarga del SHP en la landing de Jujuy")
-        blob = c.get("https://www.mineriajujuy.gob.ar/site/" + m.group(0)).content
+        blob = c.get("https://www.mineriajujuy.gob.ar/site/" + m.group(0).replace("&amp;", "&")).content
     zipfile.ZipFile(io.BytesIO(blob))  # valida que sea un zip
     return _guardar("jujuy", blob, "zip", hoy), "mineriajujuy.gob.ar (SHP CATASTRO_MINERO)"
 
 
+def capa_por_titulo(capabilities: str, titulo: str) -> str | None:
+    """Nombre de la capa cuyo titulo es `titulo` (sin distinguir mayusculas), en un GetCapabilities."""
+    for ft in re.findall(r"<(?:wfs:)?FeatureType\b.*?</(?:wfs:)?FeatureType>", capabilities, re.S):
+        nombre = re.search(r"<(?:wfs:)?Name>([^<]+)</", ft)
+        t = re.search(r"<(?:wfs:)?Title>([^<]*)</", ft)
+        if nombre and t and t.group(1).strip().casefold() == titulo.casefold():
+            return nombre.group(1).strip()
+    return None
+
+
+def _capa_salta(c: httpx.Client) -> str:
+    try:
+        r = c.get(SALTA_WFS, params={"service": "WFS", "version": "2.0.0", "request": "GetCapabilities"})
+        r.raise_for_status()
+        return capa_por_titulo(r.text, SALTA_TITULO) or SALTA_CAPA
+    except httpx.HTTPError:
+        return SALTA_CAPA
+
+
 def _bajar_salta(hoy: dt.date) -> tuple[Path, str]:
     with httpx.Client(verify=False, timeout=300, follow_redirects=True, headers=UA) as c:
-        r = c.get(SALTA_WFS, params=_wfs_params(SALTA_CAPA))
+        capa = _capa_salta(c)
+        r = c.get(SALTA_WFS, params=_wfs_params(capa))
         r.raise_for_status()
     json.loads(r.content)  # valida que sea JSON (GeoServer devuelve XML ante errores)
-    return _guardar("salta", r.content, "geojson", hoy), f"geoportal.salta.gob.ar WFS {SALTA_CAPA}"
+    return _guardar("salta", r.content, "geojson", hoy), f"geoportal.salta.gob.ar WFS {capa}"
 
 
 def _capa_catamarca(c: httpx.Client) -> str | None:
@@ -149,7 +172,7 @@ def obtener(provincia: str, offline: bool = False) -> Crudo:
             error = e
     ruta = ultimo_crudo(provincia)
     if ruta is None:
-        motivo = f"la descarga fallo ({error!r})" if error else "modo offline"
-        raise RuntimeError(f"{provincia}: {motivo} y no hay archivos crudos en {DATA_RAW / provincia}")
+        motivo = f"la descarga falló ({type(error).__name__}: {error})" if error else "modo offline"
+        raise RuntimeError(f"{motivo} y no hay archivos crudos guardados")
     return Crudo(provincia, leer_crudo(ruta), ruta, f"archivo crudo {ruta.name}", _fecha_de(ruta),
                  reutilizado=True)

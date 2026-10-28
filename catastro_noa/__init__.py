@@ -7,6 +7,7 @@ DATA_RAW = RAIZ / "data" / "raw"
 DATA_PROCESSED = RAIZ / "data" / "processed"
 DATA_SNAPSHOT = RAIZ / "data" / "snapshot"
 DATA_HISTORIAL = RAIZ / "data" / "historial"
+ESTADO_FUENTES = RAIZ / "data" / "estado_fuentes.csv"
 DICCIONARIOS = RAIZ / "diccionarios"
 
 PROVINCIAS = ("jujuy", "salta", "catamarca")
