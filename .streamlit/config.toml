@@ -1,0 +1,10 @@
+# Modo claro y oscuro: arranca según la preferencia del sistema de cada usuario y se
+# puede cambiar desde el menú (⋮ → Settings).
+[theme.light]
+primaryColor = "#B45309"
+
+[theme.dark]
+primaryColor = "#F2B705"
+
+[server]
+runOnSave = true
