@@ -23,7 +23,7 @@ import json
 from collections import Counter
 from pathlib import Path
 
-import cloudscraper
+import httpx
 import pandas as pd
 
 from explorar_fuentes import COLS, _clean, get_jujuy, get_salta
@@ -33,8 +33,7 @@ CATAMARCA_VISOR = "https://nodoide.catamarca.gob.ar/mineria_visor/data/MINAS_5.j
 
 
 def get_catamarca_visor(n: int) -> tuple[int, pd.DataFrame]:
-    s = cloudscraper.create_scraper(browser={"browser": "chrome", "platform": "windows", "desktop": True})
-    r = s.get(CATAMARCA_VISOR, timeout=120)
+    r = httpx.get(CATAMARCA_VISOR, timeout=120, follow_redirects=True, headers={"User-Agent": "Mozilla/5.0"})
     r.raise_for_status()
     txt = r.text.split("=", 1)[1].strip().rstrip(";")
     data = json.loads(txt)
