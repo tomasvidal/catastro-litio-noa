@@ -1,8 +1,12 @@
 name: Actualizar catastro
 
 # Todos los días a las 09:00 UTC (06:00 en Argentina), por un tiempo, para ver cada cuánto
-# cambian los datos. Después se vuelve a semanal ("0 9 * * 1"). También se puede correr a
+# cambian los datos. Después se puede volver a semanal ("0 9 * * 1"). También se puede correr a
 # mano desde la pestaña Actions ("Run workflow").
+#
+# Cada corrida actualiza data/estado_fuentes.csv (fecha del último intento por provincia), así
+# que siempre hay un commit: GitHub desactiva los cron de los repos públicos sin actividad en
+# 60 días, y esto lo evita.
 on:
   schedule:
     - cron: "0 9 * * *"
@@ -23,24 +27,32 @@ jobs:
     steps:
       - uses: actions/checkout@v6.1.0
 
+      # Versiones fijas de uv y Python (.python-version): que una versión nueva no rompa
+      # la instalación sin que nadie haya tocado nada.
       - uses: astral-sh/setup-uv@v10.3.2
+        with:
+          version: "0.9.13"
 
       - run: uv sync --locked
 
-      - run: uv run pytest -q
+      # Los tests de la app quedan afuera: si la app se rompe, los datos se tienen que seguir bajando.
+      - run: uv run pytest -q --ignore=tests/test_app.py
 
-      # --estricto: si una provincia no responde, la corrida falla y no se commitea nada
-      # (una foto incompleta parecería que se dieron de baja todos sus derechos).
-      - run: uv run python -m catastro_noa --estricto
+      # --estricto: si una provincia falla, las demás se actualizan igual, la que falló conserva
+      # sus datos anteriores y la corrida termina en rojo (GitHub avisa por mail) después de
+      # commitear lo que sí se pudo.
+      - id: pipeline
+        run: uv run python -m catastro_noa --estricto
 
       - name: Commitear si hubo cambios
+        if: ${{ !cancelled() && steps.pipeline.outcome != 'skipped' }}
         run: |
-          if [ -z "$(git status --porcelain data/snapshot data/historial)" ]; then
+          if [ -z "$(git status --porcelain data/snapshot data/historial data/estado_fuentes.csv)" ]; then
             echo "Sin cambios en el catastro."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/snapshot data/historial
-          git commit -m "datos: snapshot $(date -u +%F)"
+          git add data/snapshot data/historial data/estado_fuentes.csv
+          git commit -m "datos: actualización $(date -u +%F)"
           git push
