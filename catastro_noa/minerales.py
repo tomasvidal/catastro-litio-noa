@@ -25,6 +25,9 @@ Reglas:
   - Los terminos de tipo 'no_mineral' (campamento, colas, relaves...) son instalaciones
     de las servidumbres: no suman minerales y, si aparecen, lo que sobra del texto
     (nombres de minas, expedientes) no se marca como sin clasificar.
+  - Los minerales del grupo 'Subproductos' (cesio, rubidio) se aprovechan junto con el
+    mineral de interes pero no son diagnosticos: figuran en `minerales` y no suman a
+    `grupos`, para que no metan ruido en el grupo mineral.
 """
 
 from __future__ import annotations
@@ -45,6 +48,8 @@ GRUPOS = (
     "Tierras raras",
     "Canteras, rocas de aplicación y otros minerales",
 )
+# Grupo de los minerales no diagnosticos: no figura en `grupos` (ver reglas arriba).
+SUBPRODUCTOS = "Subproductos"
 DISEMINADO = "Diseminado"
 
 # Palabras que no aportan y no deben figurar como "sin clasificar".

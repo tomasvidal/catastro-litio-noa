@@ -35,7 +35,7 @@ def _correr():
 def test_todas_las_vistas_funcionan(estado):
     at = _correr()  # sin archivo de estado: no muestra fechas ni avisos
     assert not at.warning
-    for vista in (":material/table: Tabla", ":material/history: Novedades"):
+    for vista in (":material/table: Tabla", ":material/bar_chart: Por año", ":material/history: Novedades"):
         at.segmented_control[0].set_value(vista).run()
         assert not at.exception, at.exception
     assert len(at.dataframe) == 1

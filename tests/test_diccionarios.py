@@ -9,7 +9,7 @@ la planilla, se actualiza ese CSV y este test marca que hay que sumar terminos.
 import pandas as pd
 
 from catastro_noa import DICCIONARIOS, RAIZ
-from catastro_noa.minerales import GRUPOS
+from catastro_noa.minerales import GRUPOS, SUBPRODUCTOS
 from catastro_noa.texto import clave
 
 PLANILLA = RAIZ / "tests" / "datos" / "planilla_minerales.csv"
@@ -44,7 +44,7 @@ def test_planilla_bien_formada():
 
 def test_diccionario_bien_formado():
     assert set(D["tipo"]) <= {"nombre", "simbolo", "modificador", "no_mineral"}
-    assert set(D.loc[~D["tipo"].isin(["modificador", "no_mineral"]), "grupo"]) <= set(GRUPOS)
+    assert set(D.loc[~D["tipo"].isin(["modificador", "no_mineral"]), "grupo"]) <= {*GRUPOS, SUBPRODUCTOS}
     assert set(D["origen"]) <= {"investigadores", "propuesta"}
     assert not D.duplicated(["termino", "tipo"]).any()
     # un mismo mineral canonico no puede quedar en dos grupos

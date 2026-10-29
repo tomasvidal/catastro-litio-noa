@@ -2,6 +2,7 @@ import datetime as dt
 from pathlib import Path
 
 import geopandas as gpd
+import pandas as pd
 import pytest
 from shapely.geometry import Polygon, box
 
@@ -77,3 +78,26 @@ def test_si_la_fuente_cambia_de_formato_falla_en_vez_de_publicar_vacios():
     vacio = gpd.GeoDataFrame({"expediente": []}, geometry=[], crs="EPSG:4326")
     with pytest.raises(ValueError, match="0 registros"):
         estandarizar(Crudo("jujuy", vacio, Path("x"), "test", HOY, False), M, T)
+
+
+def test_anio_expediente():
+    jujuy = _crudo("jujuy", [{"expediente": "3428-T-2024", "nombre": "A", "titular_ac": "X", "rg_tipo": "CATEO",
+                              "estado": "EN TRAMITE", "tipo_miner": "LITIO"},
+                             {"expediente": "SIN AÑO", "nombre": "B", "titular_ac": "X", "rg_tipo": "CATEO",
+                              "estado": "EN TRAMITE", "tipo_miner": "LITIO"}])
+    anios = estandarizar(jujuy, M, T)["anio_expediente"]
+    assert anios.iloc[0] == 2024 and pd.isna(anios.iloc[1])
+    salta = _crudo("salta", [{"expediente": "21041", "concesionario": "X", "tipo": "Cateo", "estado": "Vigente",
+                              "mineral": "Li", "fecha_inicio": "2023-05-02"},
+                             {"expediente": "143-1412/2018", "concesionario": "X", "tipo": "Cateo",
+                              "estado": "Vigente", "mineral": "Li", "fecha_inicio": None}])
+    assert estandarizar(salta, M, T)["anio_expediente"].tolist() == [2023, 2018]
+
+
+def test_servidumbre_no_deja_texto_para_revisar():
+    crudo = _crudo("jujuy", [{"expediente": "2593-M-2019", "nombre": None, "titular_ac": "X",
+                              "rg_tipo": "SERVIDUMBRE", "estado": "EN TRAMITE",
+                              "tipo_miner": "P/CHINCHILLA Y CHINCHILLA I"}])
+    r = estandarizar(crudo, M, T).iloc[0]
+    assert r.etapa_administrativa == "Servidumbre"
+    assert r.minerales is None and r.mineral_sin_clasificar is None

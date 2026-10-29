@@ -69,8 +69,14 @@ def test_solo_categoria_no_tiene_minerales():
 
 
 def test_lo_desconocido_queda_para_revisar():
+    r = C.clasificar("PIEDRA FILOSOFAL")
+    assert r.sin_clasificar == "FILOSOFAL"
+
+
+def test_cretacico_es_cantera():
     r = C.clasificar("CRETACICO (OBSERVADO)")
-    assert r.minerales == [] and r.sin_clasificar == "CRETACICO OBSERVADO"
+    assert r.minerales == ["Cretácico"] and r.sin_clasificar is None
+    assert r.grupos == ["Canteras, rocas de aplicación y otros minerales"]
 
 
 @pytest.mark.parametrize("texto", [
@@ -90,10 +96,11 @@ def test_instalacion_con_minerales_conserva_los_minerales():
     assert r.minerales == ["Plomo", "Zinc", "Plata"] and r.sin_clasificar is None
 
 
-def test_cesio_y_rubidio_quedan_sin_grupo_hasta_que_el_equipo_decida():
-    r = C.clasificar("Be,Cs,Ga,Li,Rb")
-    assert r.minerales == ["Berilio", "Galio", "Litio"]
-    assert r.sin_clasificar == "CS RB"
+def test_subproductos_figuran_pero_no_definen_el_grupo():
+    r = C.clasificar("BORATOS,Cs,K,Li,Na,Rb")
+    assert "Cesio" in r.minerales and "Rubidio" in r.minerales and r.sin_clasificar is None
+    assert r.grupos == ["Litio y potasio", "Depósitos evaporíticos"]
+    assert C.clasificar("Cs").grupos == []
 
 
 def test_sales_alcalinas_terreas_con_error_de_tipeo():

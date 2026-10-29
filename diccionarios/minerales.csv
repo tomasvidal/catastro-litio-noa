@@ -219,11 +219,17 @@ Azufre,nombre,Azufre,"Canteras, rocas de aplicación y otros minerales",propuest
 S,simbolo,Azufre,"Canteras, rocas de aplicación y otros minerales",propuesta,Solo se reconoce como ítem suelto de una lista
 Fosfato,nombre,Fosfatos,"Canteras, rocas de aplicación y otros minerales",propuesta,
 Fosforo,nombre,Fosfatos,"Canteras, rocas de aplicación y otros minerales",propuesta,
+Cretacico,nombre,Cretácico,"Canteras, rocas de aplicación y otros minerales",investigadores,Unidad geológica (formación cretácica) que se pide como cantera
+Cesio,nombre,Cesio,Subproductos,investigadores,Subproducto: no define el grupo mineral
+Cs,simbolo,Cesio,Subproductos,investigadores,Subproducto: no define el grupo mineral
+Rubidio,nombre,Rubidio,Subproductos,investigadores,Subproducto: no define el grupo mineral
+Rb,simbolo,Rubidio,Subproductos,investigadores,Subproducto: no define el grupo mineral
 Aluvion,modificador,,,propuesta,Tipo de depósito; no es un mineral
 Aluvional,modificador,,,propuesta,Tipo de depósito; no es un mineral
 Veta,modificador,,,propuesta,Tipo de depósito; no es un mineral
 Pirita,modificador,,,propuesta,Aparece como pirita aurífera (el mineral de interés es el oro)
 Pesados,modificador,,,propuesta,Aparece como otros pesados
+Observado,modificador,,,propuesta,Marca del catastro (ej. CRETACICO (OBSERVADO)); no es un mineral
 Campamento,no_mineral,,,propuesta,Instalación de una servidumbre; no es un mineral
 Acopio,no_mineral,,,propuesta,Instalación de una servidumbre; no es un mineral
 Cancha,no_mineral,,,propuesta,Instalación de una servidumbre; no es un mineral

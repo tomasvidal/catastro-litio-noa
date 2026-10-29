@@ -8,6 +8,7 @@ Campos de contacto personal (ej. `dom_corre` de Jujuy) NO se copian nunca.
 from __future__ import annotations
 
 import datetime as dt
+import re
 
 import geopandas as gpd
 import pandas as pd
@@ -25,10 +26,13 @@ COLUMNAS = [
     "titulares_claves", "n_titulares", "tramite_original", "estado_original", "etapa_administrativa", "etapa_proyecto", "estado",
     "mineral_original", "minerales", "grupos_minerales", "categoria_codigo", "tiene_litio",
     "mineral_sin_clasificar", "departamento", "superficie_ha_fuente", "superficie_ha_calculada",
-    "fecha_inicio", "fecha_actualizacion_fuente", "fuente", "fecha_descarga", "geometry",
+    "fecha_inicio", "anio_expediente", "fecha_actualizacion_fuente", "fuente", "fecha_descarga", "geometry",
 ]
 
 _GEOD = Geod(ellps="WGS84")
+# Año al final del expediente: '3428-T-2024' (Jujuy), '143-1412/2018' (algunos de Salta).
+_ANIO_EXPEDIENTE = re.compile(r"[-/]((?:19|20)\d{2})$")
+SERVIDUMBRE = "Servidumbre"
 
 
 def _col(gdf: gpd.GeoDataFrame, *nombres: str) -> pd.Series:
@@ -41,6 +45,15 @@ def _col(gdf: gpd.GeoDataFrame, *nombres: str) -> pd.Series:
 
 def _fecha(s: pd.Series) -> pd.Series:
     return pd.to_datetime(s, errors="coerce").dt.date
+
+
+def _anio_expediente(expediente, fecha_inicio) -> int | None:
+    """Año de inicio del expediente: el de `fecha_inicio` si la fuente la publica (Salta) y
+    si no, el que figura en el número (Jujuy)."""
+    if fecha_inicio is not None and not pd.isna(fecha_inicio):
+        return fecha_inicio.year
+    m = _ANIO_EXPEDIENTE.search(expediente) if isinstance(expediente, str) else None
+    return int(m.group(1)) if m else None
 
 
 # --------------------------------------------------------------------------- por provincia
@@ -169,7 +182,12 @@ def estandarizar(crudo: Crudo, minerales: ClasificadorMinerales,
     df["grupos_minerales"] = res.map(lambda r: "; ".join(r.grupos) or None)
     df["categoria_codigo"] = res.map(lambda r: r.categoria)
     df["tiene_litio"] = res.map(lambda r: "Litio" in r.minerales)
-    df["mineral_sin_clasificar"] = res.map(lambda r: r.sin_clasificar)
+    # En las servidumbres el campo describe la instalacion y las minas a las que sirve
+    # ('P/CHINCHILLA Y CHINCHILLA I'): lo que no se reconoce no es un mineral pendiente.
+    df["mineral_sin_clasificar"] = [None if etapa == SERVIDUMBRE else r.sin_clasificar
+                                    for etapa, r in zip(df["etapa_administrativa"], res)]
+    df["anio_expediente"] = pd.array(
+        [_anio_expediente(e, f) for e, f in zip(df["expediente"], df["fecha_inicio"])], dtype="Int64")
 
     geoms = g.geometry.map(_solo_poligonos)
     df["superficie_ha_calculada"] = geoms.map(_hectareas)
