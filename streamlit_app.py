@@ -56,6 +56,8 @@ def cargar_base() -> pd.DataFrame:
     b["tiene_litio"] = b["tiene_litio"].eq("True")
     b["grupos"] = b["grupos_minerales"].map(lambda s: s.split("; ") if s else [SIN_GRUPO])
     b["titular_buscar"] = b["titular"].map(clave).fillna("")
+    # La foto previa a la columna no la trae: hasta la siguiente corrida del robot queda vacia.
+    b["anio"] = pd.to_numeric(b.get("anio_expediente", pd.Series(pd.NA, index=b.index)), errors="coerce")
     return b
 
 
@@ -171,7 +173,8 @@ with st.container(horizontal=True):
 
 vista = st.segmented_control(
     "Vista",
-    [":material/map: Mapa", ":material/table: Tabla", ":material/history: Novedades"],
+    [":material/map: Mapa", ":material/table: Tabla", ":material/bar_chart: Por año",
+     ":material/history: Novedades"],
     default=":material/map: Mapa", label_visibility="collapsed")
 
 # --- Mapa ----------------------------------------------------------------------------
@@ -219,6 +222,27 @@ elif vista == ":material/table: Tabla":
         "Descargar CSV", sel.drop(columns=["grupos", "titular_buscar", "provincia_nombre"])
         .to_csv(index=False).encode("utf-8-sig"),
         file_name="catastro_noa_filtrado.csv", mime="text/csv", icon=":material/download:")
+
+# --- Por año -------------------------------------------------------------------------
+elif vista == ":material/bar_chart: Por año":
+    st.caption("Derechos vigentes según el año de inicio del expediente (en Jujuy, el que figura "
+               "en el número; en Salta, la fecha de inicio). Solo cuenta los que la provincia "
+               "publica hoy: los caducados o archivados no están, así que los años más viejos "
+               "quedan subrepresentados.")
+    con_anio = sel.dropna(subset=["anio"])
+    if con_anio.empty:
+        st.info("No hay derechos con año de expediente para los filtros elegidos.",
+                icon=":material/filter_alt_off:")
+    else:
+        desde = st.slider("Desde el año", int(con_anio["anio"].min()), int(con_anio["anio"].max()),
+                          max(int(con_anio["anio"].min()), 1990))
+        por_anio = (con_anio[con_anio["anio"] >= desde]
+                    .groupby(["anio", "provincia_nombre"]).size().unstack(fill_value=0))
+        por_anio.index = por_anio.index.astype(int).astype(str)
+        st.bar_chart(por_anio, x_label="Año de inicio del expediente", y_label="Derechos",
+                     stack=False, height=480)
+        st.caption(f"{len(sel) - len(con_anio):,} derechos filtrados sin año de expediente."
+                   .replace(",", "."))
 
 # --- Novedades -----------------------------------------------------------------------
 elif vista == ":material/history: Novedades":
