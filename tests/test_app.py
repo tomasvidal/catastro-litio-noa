@@ -41,6 +41,13 @@ def test_todas_las_vistas_funcionan(estado):
     assert len(at.dataframe) == 1
 
 
+def test_por_anio_estimado(estado):
+    at = _correr()
+    at.segmented_control[0].set_value(":material/bar_chart: Por año").run()
+    at.segmented_control[1].set_value("Expedientes abiertos (estimado)").run()
+    assert not at.exception, at.exception
+
+
 def test_avisa_si_una_fuente_fallo(estado):
     hoy = dt.date.today()
     estado.write_text(ENCABEZADO + f"jujuy,{hoy},{hoy},ok,1,x,\nsalta,{hoy},2026-10-25,error,1,x,timeout\n",

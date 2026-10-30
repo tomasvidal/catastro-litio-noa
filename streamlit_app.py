@@ -18,6 +18,8 @@ import pydeck as pdk
 import streamlit as st
 
 from catastro_noa import DATA_HISTORIAL, DATA_SNAPSHOT, ESTADO_FUENTES
+from catastro_noa.expedientes import COLUMNAS as COLUMNAS_POR_ANIO
+from catastro_noa.expedientes import expedientes_por_anio
 from catastro_noa.minerales import GRUPOS
 from catastro_noa.texto import clave
 
@@ -33,6 +35,7 @@ COLORES_ETAPA = {  # RGBA para el mapa; mismos tonos que la leyenda
     "Canteras y otros": [120, 160, 200, 120],
 }
 COLOR_SIN_ETAPA = [160, 160, 160, 110]
+PUBLICADOS, ABIERTOS = "Derechos publicados hoy", "Expedientes abiertos (estimado)"
 EVENTOS = {
     "alta": "Alta",
     "baja": "Baja",
@@ -59,6 +62,17 @@ def cargar_base() -> pd.DataFrame:
     # La foto previa a la columna no la trae: hasta la siguiente corrida del robot queda vacia.
     b["anio"] = pd.to_numeric(b.get("anio_expediente", pd.Series(pd.NA, index=b.index)), errors="coerce")
     return b
+
+
+@st.cache_data(ttl="1h")
+def cargar_expedientes_por_anio() -> pd.DataFrame:
+    """Estimación de expedientes abiertos por año (ver catastro_noa/expedientes.py)."""
+    b = cargar_base()
+    if "anio_expediente" not in b:
+        return pd.DataFrame(columns=[*COLUMNAS_POR_ANIO, "provincia_nombre"])
+    t = expedientes_por_anio(b)
+    t["provincia_nombre"] = t["provincia"].str.title()
+    return t
 
 
 @st.cache_data(ttl="1h")
@@ -225,24 +239,40 @@ elif vista == ":material/table: Tabla":
 
 # --- Por año -------------------------------------------------------------------------
 elif vista == ":material/bar_chart: Por año":
-    st.caption("Derechos vigentes según el año de inicio del expediente (en Jujuy, el que figura "
-               "en el número; en Salta, la fecha de inicio). Solo cuenta los que la provincia "
-               "publica hoy: los caducados o archivados no están, así que los años más viejos "
-               "quedan subrepresentados.")
-    con_anio = sel.dropna(subset=["anio"])
+    medida = st.segmented_control(
+        "Qué contar", [PUBLICADOS, ABIERTOS], default=PUBLICADOS, required=True)
+    if medida == PUBLICADOS:
+        st.caption("Derechos vigentes según el año de inicio del expediente (en Jujuy, el que "
+                   "figura en el número; en Salta, la fecha de inicio). Solo cuenta los que la "
+                   "provincia publica hoy: los caducados o archivados no están, así que los años "
+                   "más viejos quedan subrepresentados.")
+        con_anio = sel.dropna(subset=["anio"])
+    else:
+        st.caption("Cuántos expedientes se abrieron cada año, se publiquen hoy o no: la diferencia "
+                   "entre el último número de expediente del año y el del año anterior. Solo donde "
+                   "la numeración es un correlativo del catastro minero (Jujuy desde 2003; Salta "
+                   "de 1991 a 2019, antes del cambio de numeración). Es una estimación sobre todos "
+                   "los expedientes, así que solo se aplica el filtro de provincia.")
+        estimados = cargar_expedientes_por_anio()
+        con_anio = estimados[estimados["provincia_nombre"].isin(f_prov)].dropna(
+            subset=["abiertos_estimados"]).rename(columns={"abiertos_estimados": "valor"})
     if con_anio.empty:
-        st.info("No hay derechos con año de expediente para los filtros elegidos.",
-                icon=":material/filter_alt_off:")
+        st.info("No hay datos por año para los filtros elegidos.", icon=":material/filter_alt_off:")
     else:
         desde = st.slider("Desde el año", int(con_anio["anio"].min()), int(con_anio["anio"].max()),
                           max(int(con_anio["anio"].min()), 1990))
-        por_anio = (con_anio[con_anio["anio"] >= desde]
-                    .groupby(["anio", "provincia_nombre"]).size().unstack(fill_value=0))
+        recorte = con_anio[con_anio["anio"] >= desde]
+        if medida == PUBLICADOS:
+            por_anio = recorte.groupby(["anio", "provincia_nombre"]).size().unstack(fill_value=0)
+        else:
+            por_anio = recorte.pivot(index="anio", columns="provincia_nombre", values="valor")
         por_anio.index = por_anio.index.astype(int).astype(str)
-        st.bar_chart(por_anio, x_label="Año de inicio del expediente", y_label="Derechos",
+        st.bar_chart(por_anio.astype(float), x_label="Año de inicio del expediente",
+                     y_label="Derechos" if medida == PUBLICADOS else "Expedientes abiertos (estimado)",
                      stack=False, height=480)
-        st.caption(f"{len(sel) - len(con_anio):,} derechos filtrados sin año de expediente."
-                   .replace(",", "."))
+        if medida == PUBLICADOS:
+            st.caption(f"{len(sel) - len(con_anio):,} derechos filtrados sin año de expediente."
+                       .replace(",", "."))
 
 # --- Novedades -----------------------------------------------------------------------
 elif vista == ":material/history: Novedades":
