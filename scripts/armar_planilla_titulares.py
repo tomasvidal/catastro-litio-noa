@@ -28,6 +28,7 @@ TIPOS_ACTOR = ["Empresa privada", "Empresa estatal o provincial", "Persona físi
 ORIGENES = ["Argentina", "Australia", "Canadá", "China", "Corea del Sur", "Estados Unidos", "Francia",
             "Japón", "Reino Unido", "Suiza", "Mixto (varios países)", "Otro", "Sin dato"]
 UMBRAL_PRIORIDAD = 0.8  # titulares que juntan el 80 % de la superficie (total o con litio)
+TOP_DERECHOS = 50  # y los que tienen mas derechos (pedimentos), aunque sean chicos
 
 _COLOR_DATO, _COLOR_COMPLETAR = "2F75B5", "BF8F00"
 _A_COMPLETAR = {  # columna -> ancho
@@ -38,8 +39,8 @@ _LEER = [
                "Las columnas con encabezado azul son datos de la base; las de encabezado ocre están vacías "
                "para completar."),
     ("Orden", "De mayor a menor superficie. La columna prioridad marca con 'Alta' a los titulares que, "
-              "sumados, concentran el 80 % de la superficie total o el 80 % de la superficie con litio: "
-              "con esos alcanza para un primer análisis."),
+              "sumados, concentran el 80 % de la superficie total o el 80 % de la superficie con litio, "
+              f"y a los {TOP_DERECHOS} con más derechos: con esos alcanza para un primer análisis."),
     ("Varios titulares", "Si un derecho tiene varios titulares, cuenta para cada uno de ellos."),
     ("titular", "Nombre normalizado (mayúsculas, sin acentos ni puntuación). Es la clave para cruzar "
                 "esta planilla con la base: no modificarla."),
@@ -81,7 +82,8 @@ def tabla_titulares(base: pd.DataFrame) -> pd.DataFrame:
         acum = t[col].sort_values(ascending=False).cumsum() / t[col].sum()
         return set(acum[acum.shift(fill_value=0) < UMBRAL_PRIORIDAD].index)
 
-    alta = _top("superficie_ha") | _top("superficie_con_litio_ha")
+    mas_derechos = set(t["derechos"].sort_values(ascending=False, kind="stable").head(TOP_DERECHOS).index)
+    alta = _top("superficie_ha") | _top("superficie_con_litio_ha") | mas_derechos
     t.insert(0, "prioridad", ["Alta" if i in alta else "" for i in t.index])
     for c in _A_COMPLETAR:
         t[c] = ""
