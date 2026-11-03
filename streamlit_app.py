@@ -12,13 +12,15 @@ provincia o aparece una etapa nueva, la app la muestra sin tocar el codigo.
 import datetime as dt
 import io
 import json
+import tempfile
+from pathlib import Path
 
 import geopandas as gpd
 import pandas as pd
 import pydeck as pdk
 import streamlit as st
 
-from catastro_noa import DATA_HISTORIAL, DATA_SNAPSHOT, ESTADO_FUENTES
+from catastro_noa import DATA_HISTORIAL, DATA_SNAPSHOT, ESTADO_FUENTES, REGISTRO_DESCARGAS
 from catastro_noa.minerales import GRUPOS
 from catastro_noa.texto import clave
 
@@ -51,9 +53,10 @@ CAMPOS = {  # campo de la novedad -> como se lee en la app
     "etapa_proyecto": "Etapa del proyecto", "titular_clave": "Titular", "minerales": "Minerales",
     "expediente": "Expediente", "nombre": "Nombre", "superficie_ha_calculada": "Superficie",
 }
-MAPA, TABLA, NOVEDADES, BUSCAR = (":material/map: Mapa", ":material/table: Tabla",
-                                  ":material/history: Novedades",
-                                  ":material/manage_search: Buscar expediente")
+MAPA, TABLA, NOVEDADES, BUSCAR, DESCARGAS = (
+    ":material/map: Mapa", ":material/table: Tabla", ":material/history: Novedades",
+    ":material/manage_search: Buscar expediente", ":material/cloud_sync: Descargas")
+SIN_CORRIDA = "⚪ Sin corrida"
 
 
 @st.cache_data(ttl="1h")
@@ -126,6 +129,17 @@ def cargar_estado() -> pd.DataFrame:
     return e
 
 
+@st.cache_data(ttl="1h")
+def cargar_descargas() -> pd.DataFrame:
+    """Resultado de la descarga de cada dia y provincia (una fila por dia y provincia)."""
+    columnas = ["fecha", "provincia", "resultado", "registros", "fuente", "detalle"]
+    d = (pd.read_csv(REGISTRO_DESCARGAS, dtype=str, keep_default_na=False) if REGISTRO_DESCARGAS.exists()
+         else pd.DataFrame(columns=columnas, dtype=str))
+    d["fecha"] = pd.to_datetime(d["fecha"])
+    d["provincia_nombre"] = d["provincia"].str.title()
+    return d
+
+
 @st.cache_data(ttl="1h", max_entries=20)
 def geojson(claves: tuple[str, ...]) -> dict:
     """GeoJSON de los registros filtrados, con los campos del tooltip y el color."""
@@ -151,6 +165,21 @@ def excel(claves: tuple[str, ...]) -> bytes:
         hoja.freeze_panes = "A2"
         hoja.auto_filter.ref = hoja.dimensions
     return salida.getvalue()
+
+
+@st.cache_data(ttl="1h", max_entries=5)
+def geopackage(claves: tuple[str, ...]) -> bytes:
+    """Los registros filtrados con su poligono, en un GeoPackage para QGIS u otro SIG.
+
+    Usa la geometria original, no la simplificada del mapa."""
+    b = (cargar_base().set_index("clave").loc[list(claves)].reset_index()
+         .drop(columns=["grupos", "titular_buscar", "provincia_nombre"]))
+    geoms = gpd.read_parquet(DATA_SNAPSHOT / "geometrias.parquet")[["geom_hash", "geometry"]]
+    g = gpd.GeoDataFrame(b.merge(geoms, on="geom_hash", how="left"), geometry="geometry", crs=geoms.crs)
+    with tempfile.TemporaryDirectory() as carpeta:
+        ruta = Path(carpeta) / "derechos.gpkg"
+        g.to_file(ruta, driver="GPKG", layer="derechos_mineros")
+        return ruta.read_bytes()
 
 
 st.set_page_config(page_title="Catastro minero NOA", page_icon=":material/landscape:", layout="wide")
@@ -219,7 +248,8 @@ with st.container(horizontal=True):
     st.metric("Con litio", f"{sel['tiene_litio'].sum():,}".replace(",", "."), border=True)
 
 vista = st.segmented_control(
-    "Vista", [MAPA, TABLA, NOVEDADES, BUSCAR], default=MAPA, label_visibility="collapsed")
+    "Vista", [MAPA, TABLA, NOVEDADES, BUSCAR, DESCARGAS], default=MAPA,
+    label_visibility="collapsed")
 
 # --- Mapa ----------------------------------------------------------------------------
 if vista == MAPA:
@@ -271,6 +301,13 @@ elif vista == TABLA:
             "Descargar Excel", excel(tuple(sel["clave"])), file_name="catastro_noa_filtrado.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             icon=":material/download:")
+        claves_sel = tuple(sel["clave"])
+        st.download_button(  # el archivo se arma recien al hacer clic: pesa varios MB
+            "Descargar GeoPackage", lambda: geopackage(claves_sel),
+            file_name="catastro_noa_filtrado.gpkg", mime="application/geopackage+sqlite3",
+            icon=":material/download:", on_click="ignore",
+            help="Los mismos datos con el polígono de cada derecho, para abrir en QGIS u otro "
+                 "programa de mapas.")
 
 # --- Novedades -----------------------------------------------------------------------
 elif vista == NOVEDADES:
@@ -361,3 +398,43 @@ elif vista == BUSCAR:
                 if "alta" not in set(cambios["evento"]):
                     st.caption(f"Figura en el catastro desde antes del {primera:%d/%m/%Y}, "
                                "cuando empezó el registro de cambios.")
+
+# --- Descargas -----------------------------------------------------------------------
+elif vista == DESCARGAS:
+    descargas = cargar_descargas()
+    if descargas.empty:
+        st.info("Todavía no hay descargas registradas.", icon=":material/hourglass_empty:")
+    else:
+        st.caption(
+            "Resultado de la descarga automática de cada día, desde el "
+            f"{descargas['fecha'].min():%d/%m/%Y}. Un día **sin corrida** es un día en que la "
+            "actualización no llegó a ejecutarse: el motivo está en la pestaña Actions del "
+            "repositorio. No usa los filtros de la izquierda.")
+        # Todos los dias hasta ayer (la de hoy puede no haber corrido todavia), para que se vean
+        # los dias en que el robot no corrio.
+        hasta = max(descargas["fecha"].max(), pd.Timestamp(dt.date.today() - dt.timedelta(days=1)))
+        dias = pd.date_range(descargas["fecha"].min(), hasta, freq="D")
+        descargas["texto"] = descargas.apply(
+            lambda r: (f"✅ {int(r['registros']):,} registros".replace(",", ".")
+                       if r["resultado"] == "ok" else "❌ Error"), axis=1)
+        tabla = (descargas.pivot(index="fecha", columns="provincia_nombre", values="texto")
+                 .reindex(dias).fillna(SIN_CORRIDA))
+        errores = descargas[descargas["resultado"] != "ok"]
+        tabla["Detalle"] = (errores.assign(t=errores["provincia_nombre"] + ": " + errores["detalle"])
+                            .groupby("fecha")["t"].agg(" · ".join).reindex(dias).fillna(""))
+        tabla = tabla.rename_axis("Fecha").reset_index().sort_values("Fecha", ascending=False)
+
+        provincias_reg = tabla.columns.drop(["Fecha", "Detalle"])
+        con_problemas = ~tabla[provincias_reg].apply(lambda c: c.str.startswith("✅")).all(axis=1)
+        if con_problemas.any():
+            ultimo = tabla.loc[con_problemas, "Fecha"].max()
+            st.warning(f"Último día con problemas: **{ultimo:%d/%m/%Y}**. "
+                       f"Días con problemas en el período: {int(con_problemas.sum())} de {len(tabla)}.",
+                       icon=":material/sync_problem:")
+        else:
+            st.success(f"Todas las descargas salieron bien ({len(tabla)} días).",
+                       icon=":material/check_circle:")
+        st.dataframe(
+            tabla, hide_index=True, height=min(560, (len(tabla) + 1) * 35 + 3),
+            column_config={"Fecha": st.column_config.DateColumn(format="DD/MM/YYYY")},
+            alt="Resultado de la descarga automática de cada día y provincia")

@@ -36,10 +36,31 @@ def test_todas_las_vistas_funcionan(estado):
     at = _correr()  # sin archivo de estado: no muestra fechas ni avisos
     assert not at.warning
     for vista in (":material/manage_search: Buscar expediente", ":material/table: Tabla",
-                  ":material/history: Novedades"):
+                  ":material/cloud_sync: Descargas", ":material/history: Novedades"):
         at.segmented_control[0].set_value(vista).run()
         assert not at.exception, at.exception
     assert len(at.dataframe) == 1
+
+
+def test_descargas_marca_errores_y_dias_sin_corrida(estado, monkeypatch):
+    registro = estado.parent / "descargas.csv"
+    registro.write_text(
+        "fecha,provincia,resultado,registros,fuente,detalle\n"
+        "2026-10-28,jujuy,ok,1780,x,\n2026-10-28,salta,ok,3924,x,\n"
+        "2026-10-29,jujuy,ok,1780,x,\n2026-10-29,salta,error,,,timeout\n"
+        # 30/10 sin corrida
+        "2026-10-31,jujuy,ok,1780,x,\n2026-10-31,salta,ok,3924,x,\n", encoding="utf-8")
+    monkeypatch.setattr(catastro_noa, "REGISTRO_DESCARGAS", registro)
+    at = _correr()
+    at.segmented_control[0].set_value(":material/cloud_sync: Descargas").run()
+    assert not at.exception, at.exception
+    tabla = at.dataframe[0].value.set_index("Fecha")
+    assert tabla.loc["2026-10-29", "Salta"] == "❌ Error"
+    assert tabla.loc["2026-10-29", "Detalle"] == "Salta: timeout"
+    assert tabla.loc["2026-10-30"].tolist()[:2] == ["⚪ Sin corrida"] * 2
+    assert tabla.loc["2026-10-28", "Jujuy"] == "✅ 1.780 registros"
+    assert len(tabla) == (dt.date.today() - dt.date(2026, 10, 28)).days  # hasta ayer
+    assert "Último día con problemas" in at.warning[0].value
 
 
 def test_novedades_muestran_el_expediente(estado):
@@ -50,11 +71,11 @@ def test_novedades_muestran_el_expediente(estado):
     assert tabla["expediente"].ne("").all()  # tambien las bajas, que ya no estan en la foto
 
 
-def test_tabla_descarga_csv_y_excel(estado):
+def test_tabla_descarga_csv_excel_y_geopackage(estado):
     at = _correr()
     at.segmented_control[0].set_value(":material/table: Tabla").run()
     assert not at.exception, at.exception  # el Excel se arma al mostrar la vista
-    assert len(at.get("download_button")) == 2
+    assert len(at.get("download_button")) == 3  # el GeoPackage se arma recien al hacer clic
 
 
 @pytest.mark.parametrize("texto, cambios", [
