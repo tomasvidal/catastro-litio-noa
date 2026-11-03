@@ -10,6 +10,7 @@ provincia o aparece una etapa nueva, la app la muestra sin tocar el codigo.
 """
 
 import datetime as dt
+import io
 import json
 
 import geopandas as gpd
@@ -45,6 +46,14 @@ EVENTOS = {
     "cambio_expediente": "Cambio de expediente",
     "cambio_nombre": "Cambio de nombre",
 }
+CAMPOS = {  # campo de la novedad -> como se lee en la app
+    "estado": "Estado", "etapa_administrativa": "Etapa administrativa",
+    "etapa_proyecto": "Etapa del proyecto", "titular_clave": "Titular", "minerales": "Minerales",
+    "expediente": "Expediente", "nombre": "Nombre", "superficie_ha_calculada": "Superficie",
+}
+MAPA, TABLA, NOVEDADES, BUSCAR = (":material/map: Mapa", ":material/table: Tabla",
+                                  ":material/history: Novedades",
+                                  ":material/manage_search: Buscar expediente")
 
 
 @st.cache_data(ttl="1h")
@@ -56,8 +65,6 @@ def cargar_base() -> pd.DataFrame:
     b["tiene_litio"] = b["tiene_litio"].eq("True")
     b["grupos"] = b["grupos_minerales"].map(lambda s: s.split("; ") if s else [SIN_GRUPO])
     b["titular_buscar"] = b["titular"].map(clave).fillna("")
-    # La foto previa a la columna no la trae: hasta la siguiente corrida del robot queda vacia.
-    b["anio"] = pd.to_numeric(b.get("anio_expediente", pd.Series(pd.NA, index=b.index)), errors="coerce")
     return b
 
 
@@ -70,14 +77,40 @@ def cargar_geometrias() -> gpd.GeoDataFrame:
 
 
 @st.cache_data(ttl="1h")
+def cargar_historial() -> pd.DataFrame:
+    """Todas las versiones de cada derecho, con su vigencia (una fila por version)."""
+    ruta = DATA_HISTORIAL / "historial.parquet"
+    if ruta.exists():
+        h = pd.read_parquet(ruta)
+    else:
+        h = pd.DataFrame(columns=["clave", "provincia", "expediente", "nombre", "titular",
+                                  "etapa_proyecto", "etapa_administrativa", "estado", "minerales",
+                                  "departamento", "superficie_ha_calculada",
+                                  "vigente_desde", "vigente_hasta"])
+    for c in ("vigente_desde", "vigente_hasta"):
+        h[c] = pd.to_datetime(h[c])
+    h["provincia_nombre"] = h["provincia"].str.title()
+    # Para buscar sin importar guiones, barras ni mayusculas: '143-1412/18' -> '143 1412 18'
+    h["expediente_buscar"] = h["expediente"].map(clave).fillna("")
+    return h.sort_values(["clave", "vigente_desde"])
+
+
+@st.cache_data(ttl="1h")
 def cargar_novedades() -> pd.DataFrame:
     ruta = DATA_HISTORIAL / "novedades.csv"
     columnas = ["fecha", "provincia", "clave", "nombre", "evento", "campo", "antes", "despues"]
     n = (pd.read_csv(ruta, dtype=str, keep_default_na=False) if ruta.exists()
          else pd.DataFrame(columns=columnas, dtype=str))
     n["fecha"] = pd.to_datetime(n["fecha"])
+    # Expediente tal como lo publica la provincia, para buscar el derecho en el catastro oficial.
+    # Sale del historial porque las bajas ya no estan en la foto actual; se toma la ultima
+    # version de cada clave (si el expediente cambio de formato, el viejo queda en "antes").
+    expedientes = cargar_historial().drop_duplicates("clave", keep="last")[["clave", "expediente"]]
+    n = n.merge(expedientes, on="clave", how="left")
+    n["expediente"] = n["expediente"].fillna("")
     n["provincia_nombre"] = n["provincia"].str.title()
     n["evento_nombre"] = n["evento"].map(EVENTOS).fillna(n["evento"])
+    n["campo_nombre"] = n["campo"].map(CAMPOS).fillna("")
     return n.sort_values("fecha", ascending=False)
 
 
@@ -104,6 +137,20 @@ def geojson(claves: tuple[str, ...]) -> dict:
     campos = ["nombre", "provincia_nombre", "titular", "etapa_proyecto", "etapa_administrativa",
               "estado", "minerales", "departamento", "sup_txt", "color", "geometry"]
     return json.loads(g[campos].to_json())
+
+
+@st.cache_data(ttl="1h", max_entries=20)
+def excel(claves: tuple[str, ...]) -> bytes:
+    """Los registros filtrados en un .xlsx, con las mismas columnas que el CSV."""
+    b = (cargar_base().set_index("clave").loc[list(claves)].reset_index()
+         .drop(columns=["grupos", "titular_buscar", "provincia_nombre"]))
+    salida = io.BytesIO()
+    with pd.ExcelWriter(salida, engine="openpyxl") as w:
+        b.to_excel(w, sheet_name="derechos", index=False)
+        hoja = w.sheets["derechos"]
+        hoja.freeze_panes = "A2"
+        hoja.auto_filter.ref = hoja.dimensions
+    return salida.getvalue()
 
 
 st.set_page_config(page_title="Catastro minero NOA", page_icon=":material/landscape:", layout="wide")
@@ -172,40 +219,37 @@ with st.container(horizontal=True):
     st.metric("Con litio", f"{sel['tiene_litio'].sum():,}".replace(",", "."), border=True)
 
 vista = st.segmented_control(
-    "Vista",
-    [":material/map: Mapa", ":material/table: Tabla", ":material/bar_chart: Por año",
-     ":material/history: Novedades"],
-    default=":material/map: Mapa", label_visibility="collapsed")
+    "Vista", [MAPA, TABLA, NOVEDADES, BUSCAR], default=MAPA, label_visibility="collapsed")
 
 # --- Mapa ----------------------------------------------------------------------------
-if vista == ":material/map: Mapa":
-    if sel.empty:
-        st.info("No hay derechos que cumplan los filtros.", icon=":material/filter_alt_off:")
-    else:
-        capa = pdk.Layer(
-            "GeoJsonLayer", geojson(tuple(sel["clave"])), id="derechos",
-            get_fill_color="properties.color", get_line_color=[255, 255, 255, 60],
-            line_width_min_pixels=0.5, pickable=True, auto_highlight=True)
-        tooltip = {
-            "html": "<b>{nombre}</b> · {provincia_nombre}<br/>"
-                    "Titular: {titular}<br/>"
-                    "Etapa: {etapa_proyecto} ({etapa_administrativa})<br/>"
-                    "Estado: {estado}<br/>"
-                    "Minerales: {minerales}<br/>"
-                    "Departamento: {departamento} · {sup_txt}",
-            "style": {"fontSize": "12px"},
-        }
-        vista_inicial = pdk.ViewState(latitude=-24.3, longitude=-66.3, zoom=6)
-        st.pydeck_chart(
-            pdk.Deck(layers=[capa], initial_view_state=vista_inicial, tooltip=tooltip,
-                     map_provider="carto", map_style=None),  # None: sigue el tema claro/oscuro
-            height=620, alt="Mapa de los derechos mineros filtrados, coloreados por etapa")
-        st.markdown(" · ".join(
-            [f":{c}[■] {e}" for e, c in zip(ETAPAS, ("orange", "red", "blue"))]
-            + [f":gray[■] {e}" for e in sorted(set(sel["etapa"]) - set(ETAPAS))]))
+if vista == MAPA:
+    # Sin derechos filtrados se muestra el mapa vacio, en lugar de un aviso.
+    datos = (geojson(tuple(sel["clave"])) if not sel.empty
+             else {"type": "FeatureCollection", "features": []})
+    capa = pdk.Layer(
+        "GeoJsonLayer", datos, id="derechos",
+        get_fill_color="properties.color", get_line_color=[255, 255, 255, 60],
+        line_width_min_pixels=0.5, pickable=True, auto_highlight=True)
+    tooltip = {
+        "html": "<b>{nombre}</b> · {provincia_nombre}<br/>"
+                "Titular: {titular}<br/>"
+                "Etapa: {etapa_proyecto} ({etapa_administrativa})<br/>"
+                "Estado: {estado}<br/>"
+                "Minerales: {minerales}<br/>"
+                "Departamento: {departamento} · {sup_txt}",
+        "style": {"fontSize": "12px"},
+    }
+    vista_inicial = pdk.ViewState(latitude=-24.3, longitude=-66.3, zoom=6)
+    st.pydeck_chart(
+        pdk.Deck(layers=[capa], initial_view_state=vista_inicial, tooltip=tooltip,
+                 map_provider="carto", map_style=None),  # None: sigue el tema claro/oscuro
+        height=620, alt="Mapa de los derechos mineros filtrados, coloreados por etapa")
+    st.markdown(" · ".join(
+        [f":{c}[■] {e}" for e, c in zip(ETAPAS, ("orange", "red", "blue"))]
+        + [f":gray[■] {e}" for e in sorted(set(sel["etapa"]) - set(ETAPAS))]))
 
 # --- Tabla ---------------------------------------------------------------------------
-elif vista == ":material/table: Tabla":
+elif vista == TABLA:
     columnas = {
         "provincia_nombre": "Provincia", "expediente": "Expediente", "nombre": "Nombre",
         "titular": "Titular", "etapa_proyecto": "Etapa del proyecto",
@@ -218,47 +262,102 @@ elif vista == ":material/table: Tabla":
         tabla, hide_index=True, height=560,
         column_config={"Superficie (ha)": st.column_config.NumberColumn(format="localized")},
         alt="Tabla de los derechos mineros filtrados")
-    st.download_button(
-        "Descargar CSV", sel.drop(columns=["grupos", "titular_buscar", "provincia_nombre"])
-        .to_csv(index=False).encode("utf-8-sig"),
-        file_name="catastro_noa_filtrado.csv", mime="text/csv", icon=":material/download:")
-
-# --- Por año -------------------------------------------------------------------------
-elif vista == ":material/bar_chart: Por año":
-    st.caption("Derechos vigentes según el año de inicio del expediente (en Jujuy, el que figura "
-               "en el número; en Salta, la fecha de inicio). Solo cuenta los que la provincia "
-               "publica hoy: los caducados o archivados no están, así que los años más viejos "
-               "quedan subrepresentados.")
-    con_anio = sel.dropna(subset=["anio"])
-    if con_anio.empty:
-        st.info("No hay derechos con año de expediente para los filtros elegidos.",
-                icon=":material/filter_alt_off:")
-    else:
-        desde = st.slider("Desde el año", int(con_anio["anio"].min()), int(con_anio["anio"].max()),
-                          max(int(con_anio["anio"].min()), 1990))
-        por_anio = (con_anio[con_anio["anio"] >= desde]
-                    .groupby(["anio", "provincia_nombre"]).size().unstack(fill_value=0))
-        por_anio.index = por_anio.index.astype(int).astype(str)
-        st.bar_chart(por_anio, x_label="Año de inicio del expediente", y_label="Derechos",
-                     stack=False, height=480)
-        st.caption(f"{len(sel) - len(con_anio):,} derechos filtrados sin año de expediente."
-                   .replace(",", "."))
+    with st.container(horizontal=True):
+        st.download_button(
+            "Descargar CSV", sel.drop(columns=["grupos", "titular_buscar", "provincia_nombre"])
+            .to_csv(index=False).encode("utf-8-sig"),
+            file_name="catastro_noa_filtrado.csv", mime="text/csv", icon=":material/download:")
+        st.download_button(
+            "Descargar Excel", excel(tuple(sel["clave"])), file_name="catastro_noa_filtrado.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            icon=":material/download:")
 
 # --- Novedades -----------------------------------------------------------------------
-elif vista == ":material/history: Novedades":
+elif vista == NOVEDADES:
     st.caption("Cambios detectados entre descargas sucesivas: altas, bajas y cambios de "
-               "titular, etapa, estado o mineral. Solo filtra por provincia.")
+               "titular, etapa, estado o mineral. Solo filtra por provincia. El expediente es "
+               "el que publica la provincia: sirve para buscar el derecho en el catastro oficial "
+               "o en la vista Tabla.")
     nov = novedades[novedades["provincia_nombre"].isin(f_prov)]
     f_eventos = st.pills("Tipo de cambio", sorted(nov["evento_nombre"].unique()),
                          selection_mode="multi")
     if f_eventos:
         nov = nov[nov["evento_nombre"].isin(f_eventos)]
     st.dataframe(
-        nov[["fecha", "provincia_nombre", "nombre", "evento_nombre", "antes", "despues"]],
+        nov[["fecha", "provincia_nombre", "expediente", "nombre", "evento_nombre", "antes", "despues"]],
         hide_index=True, height=520,
         column_config={
             "fecha": st.column_config.DateColumn("Fecha", format="DD/MM/YYYY"),
-            "provincia_nombre": "Provincia", "nombre": "Derecho", "evento_nombre": "Cambio",
+            "provincia_nombre": "Provincia", "expediente": "Expediente", "nombre": "Derecho",
+            "evento_nombre": "Cambio",
             "antes": "Antes", "despues": "Después",
         },
         alt="Tabla de novedades detectadas en el catastro")
+
+# --- Buscar expediente ---------------------------------------------------------------
+elif vista == BUSCAR:
+    historial = cargar_historial()
+    inicio = historial.groupby("provincia_nombre")["vigente_desde"].min()
+    st.caption(
+        "Escribí un número de expediente para ver cómo fue cambiando ese derecho. Los cambios se "
+        "registran desde " + " y ".join(f"el {f:%d/%m/%Y} en {p}" for p, f in inicio.items())
+        + ". No hace falta respetar guiones ni barras. No usa los filtros de la izquierda.")
+    buscado = clave(st.text_input("Expediente", placeholder="Ej.: 2911-M-2022 o 758823")) or ""
+    if buscado:
+        hallados = historial[historial["expediente_buscar"] == buscado]
+        if hallados.empty and len(buscado) >= 3:  # si no hay uno igual, los que lo contienen
+            hallados = historial[historial["expediente_buscar"].str.contains(buscado, regex=False)]
+        # Ultima version de cada derecho encontrado (puede haberse encontrado por un expediente
+        # viejo, si la provincia le cambio el formato)
+        ultimas = historial[historial["clave"].isin(hallados["clave"])].groupby("clave").tail(1)
+        if ultimas.empty:
+            st.info("No se encontró ningún derecho con ese expediente.", icon=":material/search_off:")
+        else:
+            def _rotulo(k: str) -> str:
+                r = ultimas.set_index("clave").loc[k]
+                sup = pd.to_numeric(r["superficie_ha_calculada"], errors="coerce")
+                return (f"{r['expediente']} · {r['nombre'] or 'Sin nombre'} · {r['provincia_nombre']}"
+                        + (f" · {sup:,.0f} ha".replace(",", ".") if pd.notna(sup) else ""))
+            if len(ultimas) > 1:
+                st.caption(f"{len(ultimas)} derechos coinciden con la búsqueda.")
+            elegido = st.selectbox("Derecho", list(ultimas["clave"]), format_func=_rotulo,
+                                   label_visibility="collapsed" if len(ultimas) == 1 else "visible")
+            versiones = historial[historial["clave"] == elegido]
+            actual = versiones.iloc[-1]
+
+            st.subheader(f"{actual['nombre'] or 'Sin nombre'} · {actual['provincia_nombre']}")
+            if pd.notna(actual["vigente_hasta"]):
+                st.warning(f"Ya no figura en el catastro provincial desde el "
+                           f"{actual['vigente_hasta']:%d/%m/%Y}. Abajo, los últimos datos publicados.",
+                           icon=":material/block:")
+            sup = pd.to_numeric(actual["superficie_ha_calculada"], errors="coerce")
+            ficha = {
+                "Expediente": actual["expediente"], "Titular": actual["titular"],
+                "Etapa del proyecto": actual["etapa_proyecto"],
+                "Etapa administrativa": actual["etapa_administrativa"], "Estado": actual["estado"],
+                "Minerales": actual["minerales"], "Departamento": actual["departamento"],
+                "Superficie": f"{sup:,.0f} ha".replace(",", ".") if pd.notna(sup) else "s/d",
+            }
+            st.dataframe(pd.DataFrame({"Dato": ficha.keys(), "Valor": ficha.values()}),
+                         hide_index=True, height=(len(ficha) + 1) * 35 + 3,  # sin barra de scroll
+                         alt="Datos actuales del derecho")
+
+            st.markdown("**Cambios registrados**")
+            cambios = novedades[novedades["clave"] == elegido].sort_values("fecha")
+            primera = versiones["vigente_desde"].min()
+            if cambios.empty:
+                st.info(f"Sin cambios desde que se registra ({primera:%d/%m/%Y}).",
+                        icon=":material/check_circle:")
+            else:
+                st.dataframe(
+                    cambios[["fecha", "evento_nombre", "campo_nombre", "antes", "despues"]],
+                    hide_index=True,
+                    column_config={
+                        "fecha": st.column_config.DateColumn("Fecha", format="DD/MM/YYYY"),
+                        "evento_nombre": "Cambio", "campo_nombre": "Qué cambió",
+                        "antes": "Antes", "despues": "Después",
+                    },
+                    alt="Cambios registrados del derecho, del más viejo al más nuevo")
+                if "alta" not in set(cambios["evento"]):
+                    st.caption(f"Figura en el catastro desde antes del {primera:%d/%m/%Y}, "
+                               "cuando empezó el registro de cambios.")

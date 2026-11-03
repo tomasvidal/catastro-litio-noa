@@ -35,10 +35,50 @@ def _correr():
 def test_todas_las_vistas_funcionan(estado):
     at = _correr()  # sin archivo de estado: no muestra fechas ni avisos
     assert not at.warning
-    for vista in (":material/table: Tabla", ":material/bar_chart: Por año", ":material/history: Novedades"):
+    for vista in (":material/manage_search: Buscar expediente", ":material/table: Tabla",
+                  ":material/history: Novedades"):
         at.segmented_control[0].set_value(vista).run()
         assert not at.exception, at.exception
     assert len(at.dataframe) == 1
+
+
+def test_novedades_muestran_el_expediente(estado):
+    at = _correr()
+    at.segmented_control[0].set_value(":material/history: Novedades").run()
+    tabla = at.dataframe[0].value
+    assert "expediente" in tabla.columns
+    assert tabla["expediente"].ne("").all()  # tambien las bajas, que ya no estan en la foto
+
+
+def test_tabla_descarga_csv_y_excel(estado):
+    at = _correr()
+    at.segmented_control[0].set_value(":material/table: Tabla").run()
+    assert not at.exception, at.exception  # el Excel se arma al mostrar la vista
+    assert len(at.get("download_button")) == 2
+
+
+@pytest.mark.parametrize("texto, cambios", [
+    ("2911-M-2022", True),   # MASA 40: paso de solicitud a mina concedida
+    ("2911 m 2022", True),   # sin guiones ni mayusculas
+    ("212-L-1996", True),    # CASA COLORADA: dada de baja, ya no esta en la foto
+    ("no existe", False),
+])
+def test_buscar_expediente(estado, texto, cambios):
+    at = _correr()
+    at.segmented_control[0].set_value(":material/manage_search: Buscar expediente").run()
+    at.text_input[0].input(texto).run()
+    assert not at.exception, at.exception
+    if cambios:
+        assert len(at.dataframe) == 2  # ficha y cambios
+    else:
+        assert "No se encontró" in at.info[0].value
+
+
+def test_mapa_vacio_si_no_hay_derechos(estado):
+    at = _correr()
+    at.sidebar.button_group[0].set_value([]).run()  # ninguna provincia elegida
+    assert not at.exception, at.exception
+    assert not at.info  # no reemplaza el mapa por un aviso
 
 
 def test_avisa_si_una_fuente_fallo(estado):
