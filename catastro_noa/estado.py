@@ -10,6 +10,11 @@ Columnas:
   provincia, ultimo_intento, ultima_descarga_ok (fechas AAAA-MM-DD), resultado ("ok" / "error"),
   registros (de la ultima descarga buena), registros_intento (de la ultima descarga, aunque se
   haya descartado), fuente (de donde salio) y detalle (motivo del error).
+
+  data/historial/descargas.csv   registro de todas las corridas: una fila por dia y provincia
+                                 (fecha, provincia, resultado, registros, fuente, detalle). Si una
+                                 corrida se repite el mismo dia, queda la ultima. Un dia sin filas
+                                 es un dia en que el robot no llego a correr.
 """
 
 from __future__ import annotations
@@ -19,11 +24,13 @@ from pathlib import Path
 
 import pandas as pd
 
-from . import ESTADO_FUENTES
+from . import ESTADO_FUENTES, REGISTRO_DESCARGAS
 
 RUTA = ESTADO_FUENTES
+RUTA_REGISTRO = REGISTRO_DESCARGAS
 COLUMNAS = ["provincia", "ultimo_intento", "ultima_descarga_ok", "resultado", "registros", "registros_intento",
             "fuente", "detalle"]
+COLUMNAS_REGISTRO = ["fecha", "provincia", "resultado", "registros", "fuente", "detalle"]
 
 
 def leer(ruta: Path | None = None) -> pd.DataFrame:
@@ -57,4 +64,23 @@ def escribir(estado: pd.DataFrame, ruta: Path | None = None) -> str:
     ruta = ruta or RUTA
     ruta.parent.mkdir(parents=True, exist_ok=True)
     estado.to_csv(ruta, index=False, encoding="utf-8", lineterminator="\n")
+    return str(ruta)
+
+
+def anotar(estado: pd.DataFrame, fecha: dt.date, provincias: list[str], ruta: Path | None = None) -> str:
+    """Suma al registro de descargas el resultado de hoy de cada provincia intentada."""
+    ruta = ruta or RUTA_REGISTRO
+    previo = (pd.read_csv(ruta, dtype=str, keep_default_na=False) if ruta.exists()
+              else pd.DataFrame(columns=COLUMNAS_REGISTRO))
+    hoy = estado[estado["provincia"].isin(provincias)]
+    nuevas = pd.DataFrame({
+        "fecha": f"{fecha:%Y-%m-%d}", "provincia": hoy["provincia"], "resultado": hoy["resultado"],
+        # registros de esta descarga, aunque se haya descartado
+        "registros": hoy["registros_intento"],
+        "fuente": hoy["fuente"].where(hoy["resultado"] == "ok", ""), "detalle": hoy["detalle"]})
+    registro = (pd.concat([previo, nuevas], ignore_index=True)
+                .drop_duplicates(["fecha", "provincia"], keep="last")
+                .sort_values(["fecha", "provincia"])[COLUMNAS_REGISTRO])
+    ruta.parent.mkdir(parents=True, exist_ok=True)
+    registro.to_csv(ruta, index=False, encoding="utf-8", lineterminator="\n")
     return str(ruta)
