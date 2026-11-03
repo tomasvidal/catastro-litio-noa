@@ -9,7 +9,8 @@ Uso:
 
 Cada provincia es independiente: si una no se puede descargar o procesar, las demas se
 actualizan igual y la que fallo conserva en la foto (data/snapshot/) sus ultimos datos, sin
-darle de baja ningun derecho. El resultado de cada una queda en data/estado_fuentes.csv.
+darle de baja ningun derecho. El resultado de cada una queda en data/estado_fuentes.csv y,
+dia por dia, en data/historial/descargas.csv.
 """
 
 from __future__ import annotations
@@ -89,6 +90,7 @@ def main() -> int:
     rutas, novedades = {}, None
     if not args.offline:
         rutas["estado"] = estado.escribir(est)
+        rutas["descargas"] = estado.anotar(est, hoy, args.provincias)
     if partes:
         base = gpd.GeoDataFrame(pd.concat(partes, ignore_index=True), crs="EPSG:4326")
         rutas |= escribir(base)

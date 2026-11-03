@@ -49,19 +49,24 @@ def entorno(tmp_path, monkeypatch):
     monkeypatch.setattr(snapshot, "DATA_SNAPSHOT", tmp_path / "snapshot")
     monkeypatch.setattr(auditoria, "DATA_HISTORIAL", tmp_path / "historial")
     monkeypatch.setattr(estado_fuentes, "RUTA", tmp_path / "estado_fuentes.csv")
+    monkeypatch.setattr(estado_fuentes, "RUTA_REGISTRO", tmp_path / "historial" / "descargas.csv")
     monkeypatch.setattr(sys, "argv", ["catastro_noa", "--estricto"])
     estado["tmp"] = tmp_path
     return estado
 
 
 def _archivos(tmp):
-    """Foto e historial (el estado de las fuentes cambia en cada corrida: tiene la fecha del intento)."""
+    """Foto e historial, sin el estado ni el registro de descargas (cambian en cada corrida)."""
     return {p.relative_to(tmp).as_posix(): p.read_bytes() for p in sorted(tmp.rglob("*"))
-            if p.is_file() and p.name != "estado_fuentes.csv"}
+            if p.is_file() and p.name not in ("estado_fuentes.csv", "descargas.csv")}
 
 
 def _estado(tmp):
     return pd.read_csv(tmp / "estado_fuentes.csv", dtype=str, keep_default_na=False).set_index("provincia")
+
+
+def _registro(tmp):
+    return pd.read_csv(tmp / "historial" / "descargas.csv", dtype=str, keep_default_na=False)
 
 
 def _novedades(tmp):
@@ -223,3 +228,31 @@ def test_offline_no_registra_intentos(entorno, monkeypatch):
     monkeypatch.setattr(sys, "argv", ["catastro_noa", "--offline"])
     assert cli.main() == 0
     assert not (entorno["tmp"] / "estado_fuentes.csv").exists()
+    assert not (entorno["tmp"] / "historial" / "descargas.csv").exists()
+
+
+def test_el_registro_de_descargas_anota_cada_provincia(entorno):
+    _dia1(entorno)
+    cli.main()
+    r = _registro(entorno["tmp"])
+    assert r[["provincia", "resultado", "registros"]].values.tolist() == [["jujuy", "ok", "2"], ["salta", "ok", "2"]]
+    assert r["fecha"].eq(f"{dt.date.today():%Y-%m-%d}").all()
+
+    entorno["salta"] = None  # otra corrida el mismo día: queda la última
+    cli.main()
+    r = _registro(entorno["tmp"]).set_index("provincia")
+    assert len(r) == 2
+    assert r.loc["salta", "resultado"] == "error" and "no responde" in r.loc["salta", "detalle"]
+    assert r.loc["salta", "fuente"] == ""
+
+
+def test_el_registro_de_descargas_acumula_los_dias(tmp_path):
+    ruta = tmp_path / "descargas.csv"
+    e = estado_fuentes.registrar(estado_fuentes.leer(tmp_path / "no.csv"), "jujuy", dt.date(2026, 11, 2),
+                                 ok=True, registros=5, fuente="f")
+    estado_fuentes.anotar(e, dt.date(2026, 11, 2), ["jujuy"], ruta)
+    e = estado_fuentes.registrar(e, "jujuy", dt.date(2026, 11, 4), ok=False, detalle="timeout")
+    estado_fuentes.anotar(e, dt.date(2026, 11, 4), ["jujuy"], ruta)
+    r = pd.read_csv(ruta, dtype=str, keep_default_na=False)
+    assert r[["fecha", "resultado", "registros", "detalle"]].values.tolist() == [
+        ["2026-11-02", "ok", "5", ""], ["2026-11-04", "error", "", "timeout"]]
