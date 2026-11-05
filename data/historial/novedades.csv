@@ -80,3 +80,5 @@ fecha,provincia,clave,nombre,evento,campo,antes,despues
 2026-10-27,jujuy,jujuy:3685 J 2026:AREA DE RESERVA JEMSE,AREA DE RESERVA JEMSE,alta,,,
 2026-10-30,jujuy,jujuy:2405 S 2018:,,cambio_estado,estado,En trámite,Vigente
 2026-11-04,jujuy,jujuy::AREA INDISPONIBLE,AREA INDISPONIBLE,alta,,,
+2026-11-05,jujuy,jujuy:1499 R 2010:,,cambio_geometria,geom_hash,fef46c8aa6483cd5,7e369151fe950a63
+2026-11-05,jujuy,jujuy:1499 R 2010:,,cambio_superficie,superficie_ha_calculada,1995.5409,1695.5529
