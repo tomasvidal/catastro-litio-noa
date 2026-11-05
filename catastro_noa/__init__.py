@@ -12,6 +12,6 @@ REGISTRO_DESCARGAS = DATA_HISTORIAL / "descargas.csv"
 DICCIONARIOS = RAIZ / "diccionarios"
 
 PROVINCIAS = ("jujuy", "salta", "catamarca")
-# Catamarca queda en pausa: su servidor no responde (ver TAREAS.md). Se puede
-# correr igual con `--provincias catamarca` o dejando un crudo en data/raw/catamarca/.
+# Catamarca queda en pausa: su fuente no publica el catastro (ver docs/metodologia.md).
+# Se puede correr igual con `--provincias catamarca` o dejando un crudo en data/raw/catamarca/.
 PROVINCIAS_ACTIVAS = ("jujuy", "salta")
