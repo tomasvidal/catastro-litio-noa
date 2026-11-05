@@ -13,7 +13,6 @@ import pandas as pd
 from openpyxl.styles import Font, PatternFill
 
 from . import DATA_PROCESSED
-from .expedientes import expedientes_por_anio
 
 _LEEME = [
     ("BASE", "Un registro por derecho minero, sin geometrías. En esta hoja y en MINERALES y ETAPAS, el color del "
@@ -24,9 +23,6 @@ _LEEME = [
     ("ETAPAS", "Cada combinación provincia / trámite / estado y a qué etapa y estado homologado se asignó."),
     ("RESUMEN", "Conteos por etapa del proyecto, estado, categoría y grupo de minerales: "
                 "una tabla por provincia, una al lado de la otra."),
-    ("POR_AÑO", "Por provincia y año de expediente: derechos que se publican hoy y una estimación de los "
-                "expedientes abiertos ese año (último número del año menos el del año anterior), solo donde "
-                "la numeración es correlativa."),
 ]
 
 # Colores de los encabezados de BASE, MINERALES y ETAPAS: qué viene de la fuente y qué se construyó.
@@ -132,7 +128,6 @@ def escribir(base: gpd.GeoDataFrame) -> dict[str, str]:
         _tabla_minerales(tabla).to_excel(xw, sheet_name="MINERALES", index=False)
         _tabla_etapas(tabla).to_excel(xw, sheet_name="ETAPAS", index=False)
         _escribir_resumen(xw, _tabla_resumen(tabla))
-        expedientes_por_anio(tabla).to_excel(xw, sheet_name="POR_AÑO", index=False)
         for hoja in xw.sheets.values():
             _autoajustar(hoja)
         xw.sheets["RESUMEN"].freeze_panes = "A3"
