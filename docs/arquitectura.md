@@ -27,7 +27,7 @@ robot (GitHub Actions) se encarga de descargar y commitear todos los días.
           todos los días, 06:00 (GitHub Actions, cron)
                         │
    ┌────────────────────▼─────────────────────┐
-   │ 1. INGESTA          catastro_noa/fuentes  │  Jujuy SHP, Salta WFS (Catamarca en pausa)
+   │ 1. INGESTA          catastro_noa/fuentes  │  Jujuy SHP, Salta WFS
    │ 2. HOMOLOGACIÓN     catastro_noa/...      │  esquema común + diccionarios/*.csv
    │ 3. AUDITORÍA        catastro_noa/auditoria│  compara con el historial
    └────────────────────┬─────────────────────┘
