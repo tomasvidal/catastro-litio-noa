@@ -19,7 +19,6 @@ La columna `origen` de cada CSV indica de dónde sale la regla:
 |---|---|---|
 | Jujuy | SHP del Juzgado Administrativo de Minas (`mineriajujuy.gob.ar`) | Todo: trámite, estado, mineral, superficie, polígono |
 | Salta | WFS de `geoportal.salta.gob.ar`, capa "Catastro Minero" | Todo, además de la fecha de inicio |
-| Catamarca | WFS de `nodoide.catamarca.gob.ar` (capa `idecat:MINAS_<fecha>`) o el visor estático de minería | **En pausa:** el WFS dejó de publicar la capa del catastro y el visor no trae trámite, estado ni superficie |
 
 - Cada descarga se guarda cruda y fechada en `data/raw/<provincia>/`. Si una fuente
   falla, se usa el último crudo disponible y se avisa.
@@ -38,7 +37,6 @@ Cada provincia escribe el mineral de una forma distinta:
 |---|---|
 | Jujuy | `DISEMINADO DE COBRE, ORO, PLATA Y SALES ALCALINAS`, `1 Y 2` |
 | Salta | `BORATOS,K,Li` (símbolos químicos y nombres) |
-| Catamarca | `Litio, Potasio y Cloruros` |
 
 De cada texto se obtiene:
 
@@ -107,7 +105,7 @@ Se generan dos columnas:
 | Salta | Mina, Grupo minero* | Explotación |
 | Salta | Cantera, Servidumbre, Convenio | Canteras y otros |
 
-\* propuesta, pendiente de validación. Catamarca no publica el trámite. Las categorías
+\* propuesta, pendiente de validación. Las categorías
 de `etapa_proyecto` son **provisorias** hasta que el equipo cierre la planilla de
 trámites. Reglas en [`diccionarios/etapas.csv`](../diccionarios/etapas.csv).
 
@@ -211,14 +209,13 @@ coherencia de la base. Decisiones que cambiaron las reglas:
 7. **Etapas:** el destino de Grupo minero y de Zona de investigación geológica minera, y
    la lista definitiva de categorías comunes.
 8. **Categorías de estado** homologado.
-9. **Catamarca:** conseguir una fuente oficial estable con trámite, estado y superficie.
-10. **Servidumbres de Jujuy:** el campo mineral describe instalaciones (campamentos,
-    diques de colas, acopios). Se tratan como `no_mineral` (propuesta): no suman mineral
-    ni quedan para revisar. Confirmar que es lo que el equipo quiere.
-11. **Superficies de Jujuy:** en 242 registros la superficie declarada difiere más de 10 %
+9. **Servidumbres de Jujuy:** el campo mineral describe instalaciones (campamentos,
+   diques de colas, acopios). Se tratan como `no_mineral` (propuesta): no suman mineral
+   ni quedan para revisar. Confirmar que es lo que el equipo quiere.
+10. **Superficies de Jujuy:** en 242 registros la superficie declarada difiere más de 10 %
     de la calculada (en 214 es mayor). Se usa la calculada como referencia; confirmar si la
     diferencia se debe a recortes del polígono (ver "Geometría y superficie").
-12. **`SEMINADO`** (Jujuy): se interpreta como un error de tipeo de *diseminado*, pero
+11. **`SEMINADO`** (Jujuy): se interpreta como un error de tipeo de *diseminado*, pero
     todavía no se clasifica.
 
 ## Problemas conocidos de los datos

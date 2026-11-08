@@ -13,7 +13,7 @@ Lo genera `uv run python -m catastro_noa` (ver [README](../README.md)).
 
 | Columna | Tipo | Descripción |
 |---|---|---|
-| `provincia` | texto | `jujuy`, `salta` o `catamarca`. |
+| `provincia` | texto | `jujuy` o `salta`. |
 | `id_fuente` | texto | Identificador interno del registro en la fuente (Jujuy `id`, Salta `fid`). Puede cambiar entre descargas: **no** sirve como clave estable. |
 | `expediente` | texto | Número de expediente tal como lo publica la provincia. No es único (ver notas). |
 | `nombre` | texto | Nombre del derecho minero (mina, cateo, cantera…). |
@@ -21,8 +21,8 @@ Lo genera `uv run python -m catastro_noa` (ver [README](../README.md)).
 | `titular_clave` | texto | Titular normalizado para agrupar y cruzar provincias: mayúsculas, sin acentos ni puntuación, formas jurídicas como sigla (`SA`, `SAU`, `SRL`, `SE`, `SAPEM`). |
 | `titulares_claves` | texto | Una clave por cada titular del registro, separadas por `\|` (ej. `PEREZ JUAN\|GOMEZ ANA`). Igual a `titular_clave` cuando hay uno solo. Vacío si no hay titular. |
 | `n_titulares` | entero | Cantidad de titulares del registro (0 si no hay). |
-| `tramite_original` | texto | Tipo de trámite publicado (Jujuy `rg_tipo`, Salta `tipo`). Catamarca no lo publica. |
-| `estado_original` | texto | Estado publicado por la fuente. Catamarca no lo publica. |
+| `tramite_original` | texto | Tipo de trámite publicado (Jujuy `rg_tipo`, Salta `tipo`). |
+| `estado_original` | texto | Estado publicado por la fuente. |
 | `etapa_administrativa` | texto | Trámite propio de cada provincia, con nombre prolijo (Cateo, Manifestación, Solicitud de mina, Mina concedida…). |
 | `etapa_proyecto` | texto | Etapa común entre provincias: `Exploración`, `Explotación` o `Canteras y otros`. **Provisoria** hasta que el equipo cierre la planilla de trámites. |
 | `estado` | texto | Estado legal homologado: `Vigente`, `En trámite`, `Vacante`, `Anulado`, `Con recurso`, `Otro`. **Propuesta**, a validar. |
@@ -33,7 +33,7 @@ Lo genera `uv run python -m catastro_noa` (ver [README](../README.md)).
 | `tiene_litio` | booleano | `True` si entre los minerales está el litio. |
 | `mineral_sin_clasificar` | texto | Palabras del campo mineral que no se pudieron clasificar. Si no está vacío, conviene revisar el diccionario. No se completa cuando el texto describe una instalación de una servidumbre (campamento, colas, relaves, etc.): esos términos no son minerales y figuran en el diccionario como `no_mineral`. En las servidumbres tampoco se completa: el campo describe la instalación o las minas a las que sirve. |
 | `departamento` | texto | Departamento, en mayúsculas y sin acentos. |
-| `superficie_ha_fuente` | número | Superficie en hectáreas declarada por la fuente (Jujuy `superficie`, Salta `area`). Catamarca no la publica. |
+| `superficie_ha_fuente` | número | Superficie en hectáreas declarada por la fuente (Jujuy `superficie`, Salta `area`). |
 | `superficie_ha_calculada` | número | Superficie en hectáreas calculada desde el polígono (área geodésica sobre el elipsoide WGS84). Disponible para todas las provincias. |
 | `fecha_inicio` | fecha | Fecha de inicio del trámite (solo Salta). |
 | `anio_expediente` | entero | Año de inicio del expediente: en Salta, el de `fecha_inicio` (o el del número si falta); en Jujuy, el que figura en el número (`3428-T-2024` → 2024). Vacío si no se puede saber. |
@@ -44,20 +44,20 @@ Lo genera `uv run python -m catastro_noa` (ver [README](../README.md)).
 
 ### Correspondencia con los campos de cada fuente
 
-| Columna | Jujuy (SHP) | Salta (WFS) | Catamarca (WFS / visor) |
-|---|---|---|---|
-| `id_fuente` | `id` | `fid` | — |
-| `expediente` | `expediente` | `expediente` | `EXPEDIENTE`, o `EXPTE DGTL` / `exptedgtl` |
-| `nombre` | `nombre` | `nombre` | `MINA` / `mina` |
-| `titular` | `titular_ac` | `concesionario` | `CONCSRIO` / `concsrio` |
-| `tramite_original` | `rg_tipo` | `tipo` | — |
-| `estado_original` | `estado` | `estado` | — |
-| `mineral_original` | `tipo_miner` | `mineral` | `MINERAL` / `mineral` |
-| `departamento` | `depto` | `departamento` | `DPTO` / `dpto` |
-| `superficie_ha_fuente` | `superficie` | `area` ("22,4675 ha") | — |
-| `fecha_inicio` | — | `fecha_inicio` | — |
-| `fecha_actualizacion_fuente` | `revision` | — | — |
-| CRS original | EPSG:22183 | EPSG:4326 | EPSG:4326 |
+| Columna | Jujuy (SHP) | Salta (WFS) |
+|---|---|---|
+| `id_fuente` | `id` | `fid` |
+| `expediente` | `expediente` | `expediente` |
+| `nombre` | `nombre` | `nombre` |
+| `titular` | `titular_ac` | `concesionario` |
+| `tramite_original` | `rg_tipo` | `tipo` |
+| `estado_original` | `estado` | `estado` |
+| `mineral_original` | `tipo_miner` | `mineral` |
+| `departamento` | `depto` | `departamento` |
+| `superficie_ha_fuente` | `superficie` | `area` ("22,4675 ha") |
+| `fecha_inicio` | — | `fecha_inicio` |
+| `fecha_actualizacion_fuente` | `revision` | — |
+| CRS original | EPSG:22183 | EPSG:4326 |
 
 **Campos de la fuente que se descartan:**
 
