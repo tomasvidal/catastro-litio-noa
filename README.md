@@ -25,9 +25,6 @@ El proyecto construye un **pipeline reproducible y de costo cero** (patrón
    de titularidad, cambios de estado y de superficie.
 4. **Publica** una app web (Streamlit) para consultar y mapear los datos y sus novedades.
 
-Catamarca estaba prevista y está **en pausa**: su servicio dejó de publicar la capa del
-catastro y el visor público no informa trámite, estado ni superficie.
-
 **Fuera de alcance:** el CIMA nacional (no respondió durante el relevamiento), las provincias
 fuera del NOA y cualquier dato que no sea público y oficial.
 
@@ -45,10 +42,10 @@ fuera del NOA y cualquier dato que no sea público y oficial.
 
 | Fase | Estado |
 |---|---|
-| 1. Relevamiento de fuentes y planificación | ✅ Hecha |
-| 2. Ingesta, homologación y CI/CD | ✅ Hecha para Jujuy y Salta, con descarga automática diaria. Quedan criterios por validar con el equipo |
-| 3. Auditoría temporal de cambios | ✅ Hecha: novedades e historial con vigencias desde el 14/9/2026 en Jujuy y el 9/10/2026 en Salta. Falta cargar los catastros de años anteriores |
-| 4. App web, documentación y cierre | ✅ App publicada. Faltan las capas de contexto (cuencas, localidades y parajes) y una guía de uso |
+| 1. Relevamiento de fuentes y planificación | Hecha |
+| 2. Ingesta, homologación y CI/CD | Hecha para Jujuy y Salta, con descarga automática diaria. Quedan criterios por validar con el equipo |
+| 3. Auditoría temporal de cambios | Hecha: novedades e historial con vigencias desde el 14/9/2026 en Jujuy y el 9/10/2026 en Salta. Falta cargar los catastros de años anteriores |
+| 4. App web, documentación y cierre | App publicada. Faltan las capas de contexto (cuencas, localidades y parajes) y una guía de uso |
 
 ## Fuentes
 
@@ -56,7 +53,6 @@ fuera del NOA y cualquier dato que no sea público y oficial.
 |---|---|---|---|
 | **Jujuy** | SHP del Juzgado Administrativo de Minas en `mineriajujuy.gob.ar` (link con token que se saca de la página de descarga). | 1.781 | EPSG:22183 |
 | **Salta** | WFS de `geoportal.salta.gob.ar`. La capa se busca por su título ("Catastro Minero"); si no aparece, se usa el último nombre conocido. | 3.924 | EPSG:4326 |
-| **Catamarca** | WFS de `nodoide.catamarca.gob.ar` o el visor estático de minería. El código está escrito, pero el WFS no publica la capa. | ⏸ En pausa | EPSG:4326 |
 
 ## Cómo correrlo
 
@@ -64,9 +60,8 @@ Requiere [uv](https://docs.astral.sh/uv/).
 
 ```bash
 uv sync                                   # instala dependencias
-uv run python -m catastro_noa             # descarga las provincias activas (Jujuy y Salta) y genera la base
+uv run python -m catastro_noa             # descarga Jujuy y Salta y genera la base
 uv run python -m catastro_noa --offline   # reprocesa con los últimos crudos descargados
-uv run python -m catastro_noa --provincias jujuy salta catamarca   # incluye Catamarca
 uv run python -m catastro_noa --estricto  # termina con error si alguna provincia no se pudo actualizar
 uv run pytest                             # tests
 uv run python run.py                      # app de consulta (lee data/snapshot/ y data/historial/)
