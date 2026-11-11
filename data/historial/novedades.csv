@@ -102,3 +102,9 @@ fecha,provincia,clave,nombre,evento,campo,antes,despues
 2026-11-07,salta,salta:793015:LLULLAITA X,LLULLAITA X,baja,,,
 2026-11-07,salta,salta:830842:ANTURIA I,ANTURIA I,cambio_titular,titular_clave,ROMERO PATRICIA ALEJANDRA,
 2026-11-07,salta,salta:992102:,,alta,,,
+2026-11-11,jujuy,jujuy:1514 M 2010:PAYO,PAYO,cambio_estado,estado,En trámite,Vigente
+2026-11-11,jujuy,jujuy:1514 M 2010:PAYO,PAYO,cambio_etapa,etapa_administrativa,Solicitud de mina,Mina concedida
+2026-11-11,jujuy,jujuy:1514 M 2010:PAYO,PAYO,cambio_etapa,etapa_proyecto,Exploración,Explotación
+2026-11-11,jujuy,jujuy:3035 P 2022:,,cambio_estado,estado,En trámite,Vigente
+2026-11-11,jujuy,jujuy:3259 S 2023:,,cambio_titular,titular_clave,SARAVIA FRIAS CONSUELO,ANDES ALTO SA
+2026-11-11,jujuy,jujuy:546 S 1979:CHOCAYA,CHOCAYA,cambio_titular,titular_clave,ALEXANDER GOLD GROUP LIMITED SUC ARG,MADERO MINERALS SA
