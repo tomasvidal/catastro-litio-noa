@@ -108,3 +108,7 @@ fecha,provincia,clave,nombre,evento,campo,antes,despues
 2026-11-11,jujuy,jujuy:3035 P 2022:,,cambio_estado,estado,En trámite,Vigente
 2026-11-11,jujuy,jujuy:3259 S 2023:,,cambio_titular,titular_clave,SARAVIA FRIAS CONSUELO,ANDES ALTO SA
 2026-11-11,jujuy,jujuy:546 S 1979:CHOCAYA,CHOCAYA,cambio_titular,titular_clave,ALEXANDER GOLD GROUP LIMITED SUC ARG,MADERO MINERALS SA
+2026-11-12,jujuy,jujuy:3687 D 2026:TAINA I,TAINA I,alta,,,
+2026-11-12,jujuy,jujuy:3688 D 2026:HERA,HERA,alta,,,
+2026-11-12,jujuy,jujuy:3689 D 2026:SAMUEL I,SAMUEL I,alta,,,
+2026-11-12,jujuy,jujuy:3690 D 2026:JUAN VII,JUAN VII,alta,,,
