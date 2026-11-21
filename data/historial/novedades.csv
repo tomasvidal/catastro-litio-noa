@@ -116,3 +116,35 @@ fecha,provincia,clave,nombre,evento,campo,antes,despues
 2026-11-20,jujuy,jujuy:2900 M 2022:CAUCHARI SUR,CAUCHARI SUR,cambio_etapa,etapa_administrativa,Solicitud de mina,Mina concedida
 2026-11-20,jujuy,jujuy:2900 M 2022:CAUCHARI SUR,CAUCHARI SUR,cambio_etapa,etapa_proyecto,Exploración,Explotación
 2026-11-20,jujuy,jujuy:3258 S 2023:,,cambio_titular,titular_clave,SARAVIA FRIAS CONSUELO,ANDES ALTO SA
+2026-11-21,salta,salta:11800:SIJES II,SIJES II,cambio_geometria,geom_hash,c58e7de822d2d600,0b72bb4a9ee330d9
+2026-11-21,salta,salta:11800:SIJES II,SIJES II,cambio_superficie,superficie_ha_calculada,504.3856,513.9119
+2026-11-21,salta,salta:11961:SOL DE MANANA,SOL DE MAÑANA,cambio_titular,titular_clave,ULEX SA,ULEX COMERCIALIZADORA ARGENTINA SA
+2026-11-21,salta,salta:13886:CAMPAMENTO,Campamento,cambio_titular,titular_clave,ULEX SA,ULEX COMERCIALIZADORA ARGENTINA SA
+2026-11-21,salta,salta:20928:CENTAURO I,CENTAURO I,cambio_estado,estado,Vacante,Anulado
+2026-11-21,salta,salta:21053:MING,MING,cambio_estado,estado,Vacante,Vigente
+2026-11-21,salta,salta:21053:MING,MING,cambio_titular,titular_clave,,NOA LITHIUM BRINES SA
+2026-11-21,salta,salta:22157:PAYO CAUCHARI 2,PAYO CAUCHARI 2,cambio_estado,estado,Vacante,Vigente
+2026-11-21,salta,salta:22157:PAYO CAUCHARI 2,PAYO CAUCHARI 2,cambio_titular,titular_clave,,CASTANEDA NORDMANN RODRIGO
+2026-11-21,salta,salta:22226:VICUNA 01,VICUÑA 01,cambio_titular,titular_clave,ARGANARAZ OLIVERO RAFAEL,
+2026-11-21,salta,salta:302 133575 2026:ZONA B ZONA DE EXCLUSION,ZONA B ZONA DE EXCLUSIÓN,baja,,,
+2026-11-21,salta,salta:5785:CRISTAL,CRISTAL,cambio_titular,titular_clave,ULEX SA,ULEX COMERCIALIZADORA ARGENTINA SA
+2026-11-21,salta,salta:5879:DONA PANCHA,DOÑA PANCHA,cambio_titular,titular_clave,ULEX SA,ULEX COMERCIALIZADORA ARGENTINA SA
+2026-11-21,salta,salta:736818:SOPHIA II,SOPHIA II,cambio_titular,titular_clave,VILLARROEL ALCOCER FERNANDO ERIK,NRG METALS ARGENTINA SA
+2026-11-21,salta,salta:736819:SOPHIA III,SOPHIA III,cambio_titular,titular_clave,VILLARROEL ALCOCER FERNANDO ERIK,NRG METALS ARGENTINA SA
+2026-11-21,salta,salta:786124:AGUA#15cf19188b587553,Agua,alta,,,
+2026-11-21,salta,salta:795746:LAUDES 4,LAUDES 4,cambio_mineral,minerales,Diatomita,Diatomita; Litio
+2026-11-21,salta,salta:824304:INFRAESTRUCTURA#05339079642c631f,Infraestructura,alta,,,
+2026-11-21,salta,salta:824304:INFRAESTRUCTURA#50918c9ef14c5ed7,Infraestructura,alta,,,
+2026-11-21,salta,salta:824304:INFRAESTRUCTURA#596038c73330ec36,Infraestructura,alta,,,
+2026-11-21,salta,salta:824304:INFRAESTRUCTURA#5ef80f00b44fde98,Infraestructura,alta,,,
+2026-11-21,salta,salta:824304:INFRAESTRUCTURA#9d5451d69d7f5554,Infraestructura,alta,,,
+2026-11-21,salta,salta:824304:INFRAESTRUCTURA#ac13acc10ea63283,Infraestructura,alta,,,
+2026-11-21,salta,salta:824304:INFRAESTRUCTURA#e53cf1fcb471bcb9,Infraestructura,alta,,,
+2026-11-21,salta,salta:824304:PILETA DE EVAPORACION#3409c855fc3f798b,Pileta de evaporación,alta,,,
+2026-11-21,salta,salta:824304:PILETA DE EVAPORACION#485b8496463d7395,Pileta de evaporación,alta,,,
+2026-11-21,salta,salta:824304:PILETA DE EVAPORACION#49dfcb16b36473ed,Pileta de evaporación,alta,,,
+2026-11-21,salta,salta:824304:PILETA DE EVAPORACION#6d3ce1850b2b7f64,Pileta de evaporación,alta,,,
+2026-11-21,salta,salta:824304:PILETA DE EVAPORACION#9fe8d196d5f0e542,Pileta de evaporación,alta,,,
+2026-11-21,salta,salta:824304:PILETA DE EVAPORACION#aea2004e4e3d9561,Pileta de evaporación,alta,,,
+2026-11-21,salta,salta:842774:CAMINO,Camino,cambio_geometria,geom_hash,ccb29f032f414da9,cbf19313d8d81a7c
+2026-11-21,salta,salta:842774:CAMINO,Camino,cambio_superficie,superficie_ha_calculada,590.9148,11.5093
