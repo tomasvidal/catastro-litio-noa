@@ -148,3 +148,4 @@ fecha,provincia,clave,nombre,evento,campo,antes,despues
 2026-11-21,salta,salta:824304:PILETA DE EVAPORACION#aea2004e4e3d9561,Pileta de evaporación,alta,,,
 2026-11-21,salta,salta:842774:CAMINO,Camino,cambio_geometria,geom_hash,ccb29f032f414da9,cbf19313d8d81a7c
 2026-11-21,salta,salta:842774:CAMINO,Camino,cambio_superficie,superficie_ha_calculada,590.9148,11.5093
+2026-11-27,jujuy,jujuy:3694 A 2026:JULIA,JULIA,alta,,,
